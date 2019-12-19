@@ -1,8 +1,0 @@
-D:\WoW\Tools\Fuckporter\MultiConverterLib\bin\Debug\MultiConverterLib.dll
-D:\WoW\Tools\Fuckporter\MultiConverterLib\bin\Debug\MultiConverterLib.pdb
-D:\WoW\Tools\Fuckporter\MultiConverterLib\bin\Debug\System.ValueTuple.dll
-D:\WoW\Tools\Fuckporter\MultiConverterLib\bin\Debug\System.ValueTuple.xml
-D:\WoW\Tools\Fuckporter\MultiConverterLib\obj\Debug\MultiConverterLib.csprojAssemblyReference.cache
-D:\WoW\Tools\Fuckporter\MultiConverterLib\obj\Debug\MultiConverterLib.csproj.CopyComplete
-D:\WoW\Tools\Fuckporter\MultiConverterLib\obj\Debug\MultiConverterLib.dll
-D:\WoW\Tools\Fuckporter\MultiConverterLib\obj\Debug\MultiConverterLib.pdb

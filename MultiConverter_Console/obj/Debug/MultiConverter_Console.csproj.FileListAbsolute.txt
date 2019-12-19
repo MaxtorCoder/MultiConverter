@@ -1,9 +1,0 @@
-D:\WoW\Tools\Fuckporter\MultiConverter_Console\bin\Debug\MultiConverter_Console.exe.config
-D:\WoW\Tools\Fuckporter\MultiConverter_Console\bin\Debug\MultiConverter_Console.exe
-D:\WoW\Tools\Fuckporter\MultiConverter_Console\bin\Debug\MultiConverter_Console.pdb
-D:\WoW\Tools\Fuckporter\MultiConverter_Console\bin\Debug\MultiConverterLib.dll
-D:\WoW\Tools\Fuckporter\MultiConverter_Console\bin\Debug\MultiConverterLib.pdb
-D:\WoW\Tools\Fuckporter\MultiConverter_Console\obj\Debug\MultiConverter_Console.csprojAssemblyReference.cache
-D:\WoW\Tools\Fuckporter\MultiConverter_Console\obj\Debug\MultiConverter_Console.csproj.CopyComplete
-D:\WoW\Tools\Fuckporter\MultiConverter_Console\obj\Debug\MultiConverter_Console.exe
-D:\WoW\Tools\Fuckporter\MultiConverter_Console\obj\Debug\MultiConverter_Console.pdb
