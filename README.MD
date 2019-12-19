@@ -31,4 +31,4 @@ If the .skin files are in the same folder they will be converted too.
 * WDT BFA support
 
 ### Requirements
-* Visual Studio 2017/2019 (.NET Framework 4.5.2)
+* Visual Studio 2019 (.NET Core 3.1)

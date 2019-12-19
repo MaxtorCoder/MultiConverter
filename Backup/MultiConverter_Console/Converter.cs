@@ -85,7 +85,6 @@ namespace MultiConverter_Console
             Console.WriteLine("Converting {0} files...", files_to_convert.Count);
 
             int errors = 0;
-            List<Exception> exceptions = new List<Exception>();
             using (StreamWriter sw = new StreamWriter("error.log", false))
             {
                 foreach (string s in files_to_convert)
