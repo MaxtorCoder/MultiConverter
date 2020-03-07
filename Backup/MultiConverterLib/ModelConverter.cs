@@ -57,7 +57,7 @@ namespace MultiConverterLib
                                 var modelNameOfs            = reader.ReadUInt32() + 8;
 
                                 reader.BaseStream.Position  = modelNameOfs;
-                                ModelName                   = new string(reader.ReadChars(modelNameSize));
+                                ModelName                   = new string(reader.ReadChars(modelNameSize)).Replace("\0", "");
                                 reader.BaseStream.Position  = offset;
 
                                 // Skip to M2Array<Texture>.
