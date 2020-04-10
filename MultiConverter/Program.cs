@@ -44,8 +44,8 @@ namespace MultiConverter
             // if (printHelp)
             //     PrintHelp();
 
-            string m2 = "nzoth - Copy.m2";
-            IConverter converter = new M2(m2, FixHelm);
+            var m2 = @"D:\WoW\Clients\World of Warcraft - Wrath of the Lich King 3.3.5\Data\patch-J.mpq\creature\nzoth\nzoth.m2";
+            var converter = new M2(m2, FixHelm);
 
             if (converter.Fix())
                 converter.Save();

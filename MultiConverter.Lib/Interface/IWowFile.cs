@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MultiConverter.Lib.Interface
 {
-    public class IWowFile
+    public abstract class IWowFile
     {
         public string Path { get; }
         public bool Valid { get; } = false;
@@ -14,7 +14,7 @@ namespace MultiConverter.Lib.Interface
         public BinaryWriter Writer { get; protected set; }
         public MemoryStream Stream { get; protected set; }
 
-        public int Size => Stream.ToArray().Length;
+        public int Size => (int)Stream.Length;
 
         private uint LastPos = 0;
 
@@ -79,7 +79,7 @@ namespace MultiConverter.Lib.Interface
         {
             var data = Stream.ToArray();
 
-            byte[] tmp = new byte[Size + count];
+            var tmp = new byte[Size + count];
             Buffer.BlockCopy(data, 0, tmp, 0, start);
             Buffer.BlockCopy(data, start, tmp, start + count, Size - start);
             data = tmp;
@@ -119,8 +119,7 @@ namespace MultiConverter.Lib.Interface
             if (Valid)
                 File.Delete(Path);
         }
-
-
+        
         public virtual void Save()
         {
             if (Valid)

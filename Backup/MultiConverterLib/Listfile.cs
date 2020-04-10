@@ -58,6 +58,8 @@ namespace MultiConverterLib
 
         public static string LookupFilename(uint id, string extension, string modelname)
         {
+            modelname = modelname.Replace(" - copy.wmo", "");
+
             // Lookup the Id in the listfile, if it does not exist
             // download and place in blp/<extension>/<modelname>/<blpname>
             if (FiledataPair.TryGetValue(id, out string filename))

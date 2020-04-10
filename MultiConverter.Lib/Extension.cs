@@ -41,6 +41,7 @@ namespace MultiConverter.Lib
             { typeof(long),      (bw, val) => bw.Write((long)val)   },
             { typeof(ulong),     (bw, val) => bw.Write((ulong)val)  },
             { typeof(double),    (bw, val) => bw.Write((double)val) },
+            { typeof(char),      (bw, val) => bw.Write((char)val) },
             { typeof(byte[]),    (bw, val) => bw.Write((byte[])val) },
             { typeof(M2Array),   (bw, val) =>
                 {

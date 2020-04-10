@@ -30,7 +30,7 @@ namespace MultiConverterLib
 
         public void WriteHeaderMagic(int pos, string magic)
         {
-            WriteInt(pos, MagicToInt("MMDX"));
+            WriteInt(pos, MagicToInt(magic));
         }
 
         /// <summary>

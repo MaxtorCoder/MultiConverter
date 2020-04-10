@@ -21,8 +21,10 @@ namespace MultiConverter.Lib.Format
         private M2Array AnimationLookup     = new M2Array();
         private M2Array Particles           = new M2Array();
 
-        private Dictionary<M2Chunk, uint> Chunks = new Dictionary<M2Chunk, uint>();
-        private Dictionary<string, int> TexturePaths = new Dictionary<string, int>();
+        private Dictionary<int, byte[]> multitextInfo   = new Dictionary<int, byte[]>();
+        private Dictionary<M2Chunk, uint> Chunks        = new Dictionary<M2Chunk, uint>();
+        private Dictionary<string, int> TexturePaths    = new Dictionary<string, int>();
+        private List<SKIN> Skins                        = new List<SKIN>();
 
         public M2(string path, bool fixHelm) : base(path)
         {
@@ -103,16 +105,187 @@ namespace MultiConverter.Lib.Format
             FixTXID();
             FixCamera();
             FixAnimations();
-            //TODO: FixSkin()
+            FixSkins();
+            FixParticles();
 
-            if (Particles.Size > 0)
-            {
-
-            }
+            // Update M2 Version
+            Write<uint>(264, 0x4);
 
             return true;
         }
 
+        #region SKIN
+        private void FixSkins()
+        {
+            var textureUnitLookup   = new List<short>();
+            var blendOverride       = new List<ushort>();
+            var transLookup         = Read<M2Array>(0x90);
+
+            var f                   = Path.Replace(".m2", "0");
+            var nViews              = Read<uint>(0x44);
+            for (var i = 0; i < nViews; ++i)
+            {
+                var skinPath = f + i + ".skin";
+                if (!File.Exists(skinPath))
+                    continue;
+
+                var skin = new SKIN(skinPath);
+                skin.Fix(ref textureUnitLookup, ref blendOverride, (int)transLookup.Size);
+                Skins.Add(skin);
+            }
+
+            if (blendOverride.Count > 0)
+            {
+                var globalFlags = Read<uint>(0x10) | 0x8;
+                Write<uint>(globalFlags, 0x10);
+
+                var blendOverridePos = Size;
+                var blendOverrideCnt = blendOverride.Count;
+                AddEmptyBytes(blendOverridePos, 2 * blendOverrideCnt);
+
+                for (var i = 0; i < blendOverrideCnt; ++i)
+                    Write<ushort>(blendOverride[i], blendOverridePos + 0x2 * i);
+
+                Write<int>(blendOverrideCnt, 0x130);
+                Write<int>(blendOverridePos, 0x134);
+            }
+
+            var start = Size;
+            Write<int>(textureUnitLookup.Count, 0x88);
+            Write<int>(start, 0x8C);
+
+            AddEmptyBytes(start, textureUnitLookup.Count * 2);
+            for (var i = 0; i < textureUnitLookup.Count; ++i)
+                Write<short>(textureUnitLookup[i], start + i * 2);
+
+            // Correct the renderflags
+            FixRenderFlags();
+        }
+
+        private void FixRenderFlags()
+        {
+            var materials = Read<M2Array>(0x70);
+            
+            for (var i = 0; i < materials.Size; ++i)
+            {
+                var pos = (int)materials.Offset + i * 0x4;
+                var flag = Read<ushort>(pos);
+                var blend = Read<ushort>(pos + 0x2);
+
+                if (blend > 6)
+                {
+                    blend = 4;
+                    flag |= 0x5;
+                }
+
+                flag &= 0x1F;
+
+                Write<ushort>(flag, pos);
+                Write<ushort>(blend, pos + 2);
+            }
+        }
+        #endregion
+        #region Particles
+        private void FixParticles()
+        {
+            if (Particles.Size > 0)
+            {
+                int particleEnd = (int)Particles.Offset + (476 + 16) * (int)Particles.Size;
+
+                if (NeedParticleFix())
+                {
+                    AddEmptyBytes(particleEnd, 16 * (int)Particles.Size);
+                    for (var i = (int)Particles.Size; i > 0; --i)
+                    {
+                        var pos = (i * 476) + (i - 1) * 16 + (int)Particles.Offset;
+                        multitextInfo[i - 1] = new byte[16];
+                        BlockCopy(pos, multitextInfo[i - 1], 0, 16);
+                        RemoveBytes(pos, 16);
+                    }
+                }
+
+                particleEnd = (int)Particles.Offset + 476 * (int)Particles.Size;
+                for (var i = 0; i < Particles.Size; ++i)
+                {
+                    var pos = i * 476 + (int)Particles.Offset + 0x28;
+                    var c = Read<char>(pos);
+
+                    var flagOfs = (int)(i * 476 + Particles.Offset + 4);
+                    var flags = Read<uint>(flagOfs);
+
+                    if (c > 4)
+                        Write<int>(4, pos);
+
+                    if ((flags & 0x800000) != 0)
+                        FixGravity(i);
+
+                    pos = i * 476 + (int)Particles.Offset + 22;
+                    if ((flags & 0x10000000) != 0)
+                    {
+                        var val = Read<short>(pos);
+                        var txt0 = (short)(val & 0x1F);
+                        var txt1 = (short)((val & 0x3E0) >> 5);
+                        var txt2 = (short)((val & 0x7C00) >> 10);
+
+                        Write<short>(txt0, pos);
+                    }
+
+                    // 0x40000000 -  EmitterSpeed
+                }
+
+                for (var i = (int)Particles.Size - 1; i >= 0; --i)
+                {
+                    if (BitConverter.ToUInt16(multitextInfo[i], 2) == 0xFF)
+                        Particles.Size--;
+                    else
+                        break;
+                }
+
+                Write<uint>(Particles.Size, 0x128);
+            }
+        }
+
+        private bool NeedParticleFix()
+        {
+            var b = new byte[4];
+            BlockCopy((int)Particles.Offset + 476, b, 0, 4);
+
+            for (var i = 0; i < 4; ++i)
+                if (b[i] != 0xFF)
+                    return true;
+
+            return false;
+        }
+
+        private void FixGravity(int i)
+        {
+            var pos     = i * 476 + 0x90 + (int)Particles.Offset;
+            var array   = Read<M2Array>(pos);
+
+            for (var j = 0; j < array.Size; ++j)
+            {
+                var val = Read<M2Array>((int)array.Offset + 0x8 * j);
+
+                if (val.Size == 0 || val.Offset == 0)
+                    continue;
+
+                for (var k = val.Offset; k < val.Offset + 0x4 * val.Size; k += 0x4)
+                {
+                    var x = Read<float>((int)k);
+                    var y = Read<float>((int)k + 1);
+                    var z = Math.Abs(Read<short>((int)k + 2));
+
+                    var x1 = x / 128.0f;
+                    var y1 = y / 128.0f;
+                    var z1 = (float)Math.Sqrt(1.0f - Math.Sqrt(x1 * x1 + y1 * y1));
+                    var mag = z / 128.0f * 0x04238648f;
+
+                    var result = x1 * mag;
+                    Write<float>(result, (int)k);
+                }
+            }
+        }
+        #endregion
         #region Textures
         private void FixTXID()
         {
