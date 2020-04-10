@@ -9,8 +9,9 @@ namespace MultiConverterLib
     {
         private string wmoName;
 
-        private Dictionary<string, int> FilenamePosition = new Dictionary<string, int>();
+        private List<string> FilenamePosition = new List<string>();
         private List<MOMT> MOMTEntries = new List<MOMT>();
+        private List<string> MODIEntries = new List<string>();
 
         public WMORootConverter(string wmo) : base(wmo)
         {
@@ -38,7 +39,8 @@ namespace MultiConverterLib
             else
             {
                 ReadMOMT(pos);
-                var motxSize = CalculateTextureSize();
+                var motxSize = CalculateTextureSize(FilenamePosition);
+                Console.WriteLine($"MOTXSize: {motxSize}");
                 AddEmptyBytes(pos, (int)motxSize + 8);
                 WriteHeaderMagic(pos, "MOTX");
                 WriteUInt(pos + 4, motxSize);
@@ -46,7 +48,7 @@ namespace MultiConverterLib
                 pos += 8;
                 foreach (var texture in FilenamePosition)
                 {
-                    var newFilename = texture.Key.ToUpper();
+                    var newFilename = texture.ToUpper();
                     for (var j = 0; j < newFilename.Length; ++j)
                         WriteChar(pos + j, newFilename[j]);
                     pos += newFilename.Length;
@@ -74,16 +76,6 @@ namespace MultiConverterLib
             pos = SkipChunk(pos, "MOPT");
             pos = SkipChunk(pos, "MOPR");
 
-            int movv = MagicToInt("MOVV");
-            ofs = ChunksOfs(pos, movv);
-            if (ofs.ContainsKey(movv))
-                pos = SkipChunk(pos, "MOVV");
-
-            int movb = MagicToInt("MOVB");
-            ofs = ChunksOfs(pos, movb);
-            if (ofs.ContainsKey(movb))
-                pos = SkipChunk(pos, "MOVB");
-
             int pos_molt = pos;
             pos = SkipChunk(pos, "MOLT");
             // fix nLights
@@ -91,35 +83,41 @@ namespace MultiConverterLib
 
             pos = SkipChunk(pos, "MODS");
 
-            int modn = MagicToInt("MODN");
-            ofs = ChunksOfs(pos, modn);
-            if (ofs.ContainsKey(modn))
-                pos = SkipChunk(pos, "MODN");
+            int modi = MagicToInt("MODI");
+            ofs = ChunksOfs(pos, modi);
+            if (ofs.ContainsKey(modi))
+            {
+                pos += 4;
+                var size = ReadUInt(pos);
+
+                for (var i = 0; i < size / 4; ++i)
+                {
+                    pos += 4;
+                    var filedataid = ReadUInt(pos);
+                    var filename = Listfile.LookupFilename(filedataid, ".wmo", wmoName, "m2");
+                    if (!MODIEntries.Contains(filename + "\0\0"))
+                        MODIEntries.Add(filename + "\0\0");
+                }
+
+                pos += 4;
+
+                var modiSize = CalculateTextureSize(MODIEntries);
+                AddEmptyBytes(pos, (int)modiSize + 8);
+                WriteHeaderMagic(pos, "MODN");
+                WriteUInt(pos + 0x4, modiSize);
+
+                pos += 0x8;
+                foreach (var filename in MODIEntries)
+                {
+                    var upperFilename = filename.ToUpper();
+                    for (var i = 0; i < upperFilename.Length; ++i)
+                        WriteChar(pos + i, upperFilename[i]);
+                    pos += upperFilename.Length;
+                }
+            }
 
             pos = FixMODD(pos);// MODD
-
-            int mddi = MagicToInt("MDDI");
-            ofs = ChunksOfs(pos, mddi);
-            if (ofs.ContainsKey(mddi))
-                RemoveBytes(pos, ReadInt(pos + 4) + 4);
-
-            int mnld = MagicToInt("MNLD");
-            ofs = ChunksOfs(pos, mnld);
-            if (ofs.ContainsKey(mnld))
-                RemoveBytes(pos, ReadInt(pos + 4) + 4);
-
             pos = SkipChunk(pos, "MFOG");
-
-            int mfed = MagicToInt("MFED");
-            ofs = ChunksOfs(pos, mfed);
-            if (ofs.ContainsKey(mfed))
-                RemoveBytes(pos, ReadInt(pos + 4) + 4);
-
-            int mvad = MagicToInt("MVAD");
-            ofs = ChunksOfs(pos, mvad);
-            if (ofs.ContainsKey(mvad))
-                RemoveBytes(pos, ReadInt(pos + 4) + 4);
-
             pos = SkipMCVP(pos); // Optional chunk
 
             return true;
@@ -143,8 +141,8 @@ namespace MultiConverterLib
 
         private int FixMODD(int pos)
         {
-            RemoveUnwantedChunksUntil(pos, "MODD");
-            int size = ReadInt(pos + 0x4);
+            WriteHeaderMagic(pos, "MODD");
+            int size = ReadInt(pos + 4);
             int nMODD = size / 0x28;
             pos += 0x8;
             for (int i = 0; i < nMODD; i++)
@@ -196,7 +194,7 @@ namespace MultiConverterLib
                 var filename = AddFilename(momtEntry.TextureOffset1);
                 if (filename != string.Empty)
                 {
-                    var idx = FilenamePosition.Keys.ToList().IndexOf(filename);
+                    var idx = FilenamePosition.IndexOf(filename);
                     momtEntry.TextureOffset1 = (uint)idx;
                 }
                 else
@@ -213,7 +211,7 @@ namespace MultiConverterLib
                 filename = AddFilename(momtEntry.TextureOffset2);
                 if (filename != string.Empty)
                 {
-                    var idx = FilenamePosition.Keys.ToList().IndexOf(filename);
+                    var idx = FilenamePosition.IndexOf(filename);
                     momtEntry.TextureOffset2 = (uint)idx;
                 }
                 else
@@ -230,7 +228,7 @@ namespace MultiConverterLib
                 filename = AddFilename(momtEntry.TextureOffset3);
                 if (filename != string.Empty)
                 {
-                    var idx = FilenamePosition.Keys.ToList().IndexOf(filename);
+                    var idx = FilenamePosition.IndexOf(filename);
                     momtEntry.TextureOffset3 = (uint)idx;
                 }
                 else
@@ -291,12 +289,10 @@ namespace MultiConverterLib
             {
                 var textureFilename = Listfile.LookupFilename(fdid, ".wmo", System.IO.Path.GetFileName(wmoName));
                 // Add the filename to the position list
-                if (!FilenamePosition.ContainsKey(textureFilename + "\0\0\0"))
-                    FilenamePosition.Add(textureFilename + "\0\0\0", 1);
-                else
-                    FilenamePosition[textureFilename + "\0\0\0"]++;
+                if (!FilenamePosition.Contains(textureFilename + "\0"))
+                    FilenamePosition.Add(textureFilename + "\0");
 
-                return textureFilename + "\0\0\0";
+                return textureFilename + "\0";
             }
 
             return string.Empty;
@@ -340,14 +336,15 @@ namespace MultiConverterLib
         private int SkipChunk(int pos, string magic)
         {
             RemoveUnwantedChunksUntil(pos, magic);
+            // Console.WriteLine($"Magic: {magic} Current Pos: {pos} New Pos: {pos + ReadInt(pos + 0x4) + 0x8}");
             return pos + ReadInt(pos + 0x4) + 0x8;
         }
 
-        private uint CalculateTextureSize()
+        private uint CalculateTextureSize(List<string> filenameInput)
         {
             var textureSize = 0u;
-            foreach (var texture in FilenamePosition)
-                textureSize += (uint)texture.Key.Length;
+            foreach (var texture in filenameInput)
+                textureSize += (uint)texture.Length;
 
             return textureSize;
         }

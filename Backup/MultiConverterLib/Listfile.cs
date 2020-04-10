@@ -56,7 +56,7 @@ namespace MultiConverterLib
             }
         }
 
-        public static string LookupFilename(uint id, string extension, string modelname)
+        public static string LookupFilename(uint id, string extension, string modelname, string downloadExtension = "blp")
         {
             modelname = modelname.Replace(" - copy.wmo", "");
 
@@ -71,16 +71,16 @@ namespace MultiConverterLib
             {
                 if (id != 0)
                 {
-                    var newFilename = $"{id}.blp";
+                    var newFilename = $"{id}.{downloadExtension}";
                     var newExtension = extension.Remove(0, 1);
-                    var pathName = $"blp/{newExtension}/{modelname}/{newFilename}";
+                    var pathName = $"Unk/{downloadExtension}/{newExtension}/{modelname}/{newFilename}";
 
-                    if (!Directory.Exists("blp"))
-                        Directory.CreateDirectory("blp");
-                    if (!Directory.Exists($"blp/{newExtension}"))
-                        Directory.CreateDirectory($"blp/{newExtension}");
-                    if (!Directory.Exists($"blp/{newExtension}/{modelname}"))
-                        Directory.CreateDirectory($"blp/{newExtension}/{modelname}");
+                    if (!Directory.Exists($"Unk/{downloadExtension}"))
+                        Directory.CreateDirectory($"Unk/{downloadExtension}");
+                    if (!Directory.Exists($"Unk/{downloadExtension}/{newExtension}"))
+                        Directory.CreateDirectory($"Unk/{downloadExtension}/{newExtension}");
+                    if (!Directory.Exists($"Unk/{downloadExtension}/{newExtension}/{modelname}"))
+                        Directory.CreateDirectory($"Unk/{downloadExtension}/{newExtension}/{modelname}");
 
                     if (File.Exists(pathName))
                         Console.WriteLine($"Filename: {newFilename} (Length: {newFilename.Length} ID: {id})");

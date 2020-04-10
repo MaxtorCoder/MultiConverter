@@ -130,10 +130,13 @@ namespace MultiConverterLib
                 int pos = start;
                 int magic = ReadInt(pos);
 
+                if (magic == end_magic)
+                    chunk_pos.Add(magic, pos);
+
                 while (magic != end_magic && pos <= Data.Length - 8)
                 {
                     magic = ReadInt(pos);
-                    chunk_pos[magic] = pos;
+                    chunk_pos.Add(magic, pos);
 
                     int size = ReadInt(pos + 0x4) + 0x8;
                     pos += size;
