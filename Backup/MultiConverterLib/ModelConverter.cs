@@ -21,7 +21,7 @@ namespace MultiConverterLib
         private HashSet<uint> shiftedOfs                = new HashSet<uint>();
         private Dictionary<int, byte[]> multitextInfo   = new Dictionary<int, byte[]>();
         private List<SkinFix> skins                     = new List<SkinFix>();
-        private Dictionary<string, int> Textures        = new Dictionary<string, int>();
+        private Dictionary<string, (int, int)> Textures = new Dictionary<string, (int, int)>();
         private Dictionary<string, uint> Chunks         = new Dictionary<string, uint>();
 
         public M2Converter(string m2, bool fix_helm) : base(m2)
@@ -114,7 +114,13 @@ namespace MultiConverterLib
                 var textureId = reader.ReadUInt32();
 
                 var filename = Listfile.LookupFilename(textureId, ".m2", ModelName);
-                Textures.Add(filename + "\0\0", filename.Length);
+                if (!Textures.ContainsKey(filename + "\0\0"))
+                    Textures.Add(filename + "\0\0", (filename.Length, 1));
+                else
+                {
+                    var value = Textures[filename + "\0\0"];
+                    Textures[filename + "\0\0"] = (value.Item1, value.Item2++);
+                }
             }
         }
 
@@ -226,15 +232,15 @@ namespace MultiConverterLib
                 if (isHarcoded)
                 {
                     var texture = Textures.First();
-                    
+
                     // Write Filename Length and Offset of Filename;
-                    WriteUInt(texturesOfs + 8, (uint)texture.Value);
+                    WriteUInt(texturesOfs + 8, (uint)texture.Value.Item1);
                     WriteUInt(texturesOfs + 12, (uint)dataSize);
 
-                    for (var j = 0; j < texture.Value; ++j)
+                    for (var j = 0; j < texture.Value.Item1; ++j)
                         WriteChar(dataSize + j, texture.Key[j]);
 
-                    dataSize += texture.Value + 2;
+                    dataSize += texture.Value.Item1 + 2;
                     Textures.Remove(texture.Key);
                 }
 
@@ -965,8 +971,8 @@ namespace MultiConverterLib
         {
             uint result = 0;
 
-            foreach (var texture in Textures)
-                result += (uint)texture.Value + 1;
+            foreach (var texture in Textures.Values)
+                result += (uint)texture.Item1 + 1;
 
             return result;
         }

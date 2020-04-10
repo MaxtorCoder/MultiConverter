@@ -40,7 +40,7 @@ namespace MultiConverterLib
             }
 
             // Check latest buildconfig.
-            using (var stream = new MemoryStream(webClient.DownloadData("http://us.patch.battle.net:1119/wowt/versions")))
+            using (var stream = new MemoryStream(webClient.DownloadData("http://us.patch.battle.net:1119/wow_beta/versions")))
             using (var reader = new StreamReader(stream))
             {
                 // Read useless lines.

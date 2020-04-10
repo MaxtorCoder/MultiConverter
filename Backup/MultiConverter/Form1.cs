@@ -13,6 +13,7 @@ using System.Diagnostics;
 
 using MultiConverterLib;
 using Microsoft.Win32;
+using System.Threading;
 
 namespace WowConverter
 {
@@ -25,6 +26,12 @@ namespace WowConverter
 
         public converter_form()
         {
+            new Thread(() =>
+            {
+                if (!Listfile.IsInitialized)
+                    Listfile.Initialize();
+            }).Start();
+
             InitializeComponent();
             lb.HorizontalScrollbar = true;
 
@@ -49,9 +56,6 @@ namespace WowConverter
 
         private void fix_btn_Click(object sender, EventArgs e)
         {
-            if (!Listfile.IsInitialized)
-                Listfile.Initialize();
-
             if (lb.Items.Count == 0)
             {
                 MessageBox.Show("No files");
