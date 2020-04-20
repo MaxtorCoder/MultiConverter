@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace MultiConverterLib
+namespace MultiConverter.Lib
 {
     public class Utils
     {

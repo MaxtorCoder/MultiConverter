@@ -1,4 +1,4 @@
-﻿namespace ModelConverter_Old
+﻿namespace MultiConverter.GUI
 {
     partial class About
     {

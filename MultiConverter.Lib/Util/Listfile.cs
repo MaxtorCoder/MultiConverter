@@ -6,7 +6,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MultiConverterLib
+namespace MultiConverter.Lib
 {
     public static class Listfile
     {

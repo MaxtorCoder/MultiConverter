@@ -1,31 +1,27 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using MultiConverter.Lib;
+using MultiConverter.Lib.Converters;
+using MultiConverter.Lib.Converters.Base;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.IO;
-using System.Text.RegularExpressions;
 using System.Diagnostics;
-
-using MultiConverterLib;
-using Microsoft.Win32;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
-using ModelConverter_Old;
+using System.Windows.Forms;
 
-namespace WowConverter
+namespace MultiConverter.GUI
 {
-    public partial class converter_form : Form
+    public partial class ConverterForm : Form
     {
         public static int PROGRESS = 5;
         private int threadRemaining = 0;
         private int converted = 0;
         private int toConverted = 0;
 
-        public converter_form()
+        public ConverterForm()
         {
             new Thread(() =>
             {
@@ -50,10 +46,7 @@ namespace WowConverter
             }
         }
 
-        private void Clear()
-        {
-            lb.Items.Clear();
-        }
+        private void Clear() => lb.Items.Clear();
 
         private void fix_btn_Click(object sender, EventArgs e)
         {
@@ -69,18 +62,6 @@ namespace WowConverter
                 progress.Maximum = lb.Items.Count;
                 progress.Step = PROGRESS;
                 Fix();
-            }
-        }
-
-        struct ConvertionErrorInfo
-        {
-            public Exception exception;
-            public string filename;
-
-            public ConvertionErrorInfo(Exception e, string file)
-            {
-                exception = e;
-                filename = file;
             }
         }
 
@@ -294,6 +275,18 @@ namespace WowConverter
         {
             var aboutBox = new About();
             aboutBox.Show();
+        }
+    }
+
+    public struct ConvertionErrorInfo
+    {
+        public Exception exception;
+        public string filename;
+
+        public ConvertionErrorInfo(Exception e, string file)
+        {
+            exception = e;
+            filename = file;
         }
     }
 }

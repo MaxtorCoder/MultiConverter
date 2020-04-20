@@ -1,9 +1,10 @@
-﻿using System;
+﻿using MultiConverter.Lib.Converters.Base;
+using System;
 using System.IO;
 
-namespace MultiConverterLib
+namespace MultiConverter.Lib.Converters
 {
-    enum GroupChunk
+    public enum GroupChunk
     {
         MOGP = 1297041232,
         MOPY = 1297043545,

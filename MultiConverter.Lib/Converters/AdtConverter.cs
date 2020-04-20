@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using MultiConverter.Lib.Converters.Base;
 
-namespace MultiConverterLib
+namespace MultiConverter.Lib.Converters
 {
     public class AdtConverter : IConverter
     {
@@ -13,7 +14,7 @@ namespace MultiConverterLib
         private ChunkedWowFile tex;
         private bool water;
         private bool models;
-        private int nTexture = 0;
+        private int textureCount = 0;
         int currentPos = 0;
 
         public AdtConverter(string path, bool h2o, bool model)
@@ -94,7 +95,7 @@ namespace MultiConverterLib
             {
                 if (adt.Data[i] == 0)
                 {
-                    nTexture++;
+                    textureCount++;
                 }
             }
 
@@ -767,10 +768,10 @@ namespace MultiConverterLib
             }
             else
             {
-                adt.AddEmptyBytes(currentPos, 0x8 + nTexture * 4);
+                adt.AddEmptyBytes(currentPos, 0x8 + textureCount * 4);
                 adt.WriteInt(currentPos, ChunkedWowFile.MagicToInt("MTXF"));
-                adt.WriteInt(currentPos + 0x4, nTexture * 4);
-                currentPos += 0x8 + nTexture * 4;
+                adt.WriteInt(currentPos + 0x4, textureCount * 4);
+                currentPos += 0x8 + textureCount * 4;
             }
         }
 

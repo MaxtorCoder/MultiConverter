@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 
-namespace MultiConverterLib
+namespace MultiConverter.Lib.Converters.Base
 {
     public class WowFile
     {
