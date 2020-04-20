@@ -14,6 +14,7 @@ using System.Diagnostics;
 using MultiConverterLib;
 using Microsoft.Win32;
 using System.Threading;
+using ModelConverter_Old;
 
 namespace WowConverter
 {
@@ -287,6 +288,12 @@ namespace WowConverter
         {
             progress.Value = 0;
             Clear();
+        }
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var aboutBox = new About();
+            aboutBox.Show();
         }
     }
 }

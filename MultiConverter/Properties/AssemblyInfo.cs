@@ -6,12 +6,12 @@ using System.Runtime.InteropServices;
 // Les informations générales relatives à un assembly dépendent de 
 // l'ensemble d'attributs suivant. Changez les valeurs de ces attributs pour modifier les informations
 // associées à un assembly.
-[assembly: AssemblyTitle("Adspartan's multi converter")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("Multi-Converter")]
+[assembly: AssemblyDescription("WoW Multi-Converter made by Adspartan and maintained by MaxtorCoder.        Code is on https://github.com/MaxtorCoder/MultiConverter")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("The Fuckporting Company")]
-[assembly: AssemblyProduct("")]
-[assembly: AssemblyCopyright("Copyright ©  2018")]
+[assembly: AssemblyProduct("Multi-Converter")]
+[assembly: AssemblyCopyright("Copyright ©  2018 - 2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -33,7 +33,7 @@ using System.Runtime.InteropServices;
 // Vous pouvez spécifier toutes les valeurs ou indiquer les numéros de build et de révision par défaut 
 // en utilisant '*', comme indiqué ci-dessous :
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("3.3")]
-[assembly: AssemblyFileVersion("3.3")]
+[assembly: AssemblyVersion("3.5")]
+[assembly: AssemblyFileVersion("3.5")]
 [assembly: NeutralResourcesLanguage("en")]
 

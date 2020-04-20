@@ -113,7 +113,7 @@ namespace MultiConverterLib
             {
                 var textureId = reader.ReadUInt32();
 
-                var filename = Listfile.LookupFilename(textureId, ".m2", ModelName);
+                var filename = Listfile.LookupFilename(textureId, ".m2", ModelName).Replace('/', '\\');
                 if (!Textures.ContainsKey(filename + "\0\0"))
                     Textures.Add(filename + "\0\0", (filename.Length, 1));
                 else

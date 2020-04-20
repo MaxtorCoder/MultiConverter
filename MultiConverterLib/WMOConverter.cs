@@ -9,13 +9,18 @@ namespace MultiConverterLib
     {
         private string wmoName;
 
-        private List<string> FilenamePosition = new List<string>();
+        private Dictionary<string, uint> FilenamePosition = new Dictionary<string, uint>();
+        private Dictionary<uint, string> DoodadsPosition = new Dictionary<uint, string>();
+        private Dictionary<string, uint> FilenamePadding = new Dictionary<string, uint>();
+
         private List<MOMT> MOMTEntries = new List<MOMT>();
-        private List<string> MODIEntries = new List<string>();
+
+        private uint TextureOffset;
+        private uint DoodadsOffset;
 
         public WMORootConverter(string wmo) : base(wmo)
         {
-            wmoName = wmo;
+            wmoName = System.IO.Path.GetFileNameWithoutExtension(wmo).Replace(" - copy", "");
         }
 
         public bool Fix()
@@ -27,6 +32,9 @@ namespace MultiConverterLib
 
             pos = SkipChunk(pos, "MVER");
             pos = SkipChunk(pos, "MOHD");
+            // pos += 28 + 44;          // Skip shit
+            // WriteUInt(pos, 0);  // Set Doodads to 0
+            // pos += 44;
 
             var motx = MagicToInt("MOTX");
             var ofs = ChunksOfs(pos, motx);
@@ -39,8 +47,7 @@ namespace MultiConverterLib
             else
             {
                 ReadMOMT(pos);
-                var motxSize = CalculateTextureSize(FilenamePosition);
-                Console.WriteLine($"MOTXSize: {motxSize}");
+                var motxSize = CalculateTextureSize(FilenamePosition.Keys.ToList());
                 AddEmptyBytes(pos, (int)motxSize + 8);
                 WriteHeaderMagic(pos, "MOTX");
                 WriteUInt(pos + 4, motxSize);
@@ -48,7 +55,7 @@ namespace MultiConverterLib
                 pos += 8;
                 foreach (var texture in FilenamePosition)
                 {
-                    var newFilename = texture.ToUpper();
+                    var newFilename = texture.Key.ToUpper();
                     for (var j = 0; j < newFilename.Length; ++j)
                         WriteChar(pos + j, newFilename[j]);
                     pos += newFilename.Length;
@@ -94,25 +101,38 @@ namespace MultiConverterLib
                 {
                     pos += 4;
                     var filedataid = ReadUInt(pos);
-                    var filename = Listfile.LookupFilename(filedataid, ".wmo", wmoName, "m2");
-                    if (!MODIEntries.Contains(filename + "\0\0"))
-                        MODIEntries.Add(filename + "\0\0");
+                    var filename = Listfile.LookupFilename(filedataid, ".wmo", wmoName, "m2").Replace('/', '\\').Replace("m2", "mdx");
+
+                    var remainderCount = 4u - (uint)filename.Length % 4u;
+                    if (!DoodadsPosition.ContainsValue(filename))
+                    {
+                        DoodadsPosition.Add(DoodadsOffset, filename);
+                        DoodadsOffset += (uint)filename.Length;
+
+                        FilenamePadding.Add(filename, remainderCount);
+                    }
                 }
 
                 pos += 4;
 
-                var modiSize = CalculateTextureSize(MODIEntries);
+                var modiSize = CalculateDoodadSize();
                 AddEmptyBytes(pos, (int)modiSize + 8);
                 WriteHeaderMagic(pos, "MODN");
                 WriteUInt(pos + 0x4, modiSize);
 
                 pos += 0x8;
-                foreach (var filename in MODIEntries)
+                foreach (var filename in DoodadsPosition)
                 {
-                    var upperFilename = filename.ToUpper();
+                    var paddingCount = FilenamePadding[filename.Value];
+                    var upperFilename = filename.Value.ToUpper();
+
                     for (var i = 0; i < upperFilename.Length; ++i)
                         WriteChar(pos + i, upperFilename[i]);
                     pos += upperFilename.Length;
+
+                    for (var i = 0; i < paddingCount; ++i)
+                        WriteChar(pos + i, '\0');
+                    pos += (int)paddingCount;
                 }
             }
 
@@ -141,12 +161,23 @@ namespace MultiConverterLib
 
         private int FixMODD(int pos)
         {
+            var doodadFilenames = DoodadsPosition.Values.ToList();
+
             WriteHeaderMagic(pos, "MODD");
             int size = ReadInt(pos + 4);
             int nMODD = size / 0x28;
             pos += 0x8;
             for (int i = 0; i < nMODD; i++)
             {
+                var oldOfs = Data[pos];
+                if (doodadFilenames.ElementAtOrDefault(oldOfs) != null)
+                {
+                    var filename = doodadFilenames[oldOfs];
+                    var offset = DoodadsPosition.FirstOrDefault(x => x.Value == filename).Key;
+                    Data[pos] = (byte)offset;
+                    // DoodadsPosition.Remove(offset);
+                }
+
                 Data[pos + 0x3] = 0;
                 pos += 0x28;
             }
@@ -194,8 +225,9 @@ namespace MultiConverterLib
                 var filename = AddFilename(momtEntry.TextureOffset1);
                 if (filename != string.Empty)
                 {
-                    var idx = FilenamePosition.IndexOf(filename);
-                    momtEntry.TextureOffset1 = (uint)idx;
+                    var idx = FilenamePosition[filename];
+                    momtEntry.TextureOffset1 = idx;
+                    //Console.WriteLine($"TextureOffset 1 [Entry: {i}]: filename: {filename} pos: {idx}");
                 }
                 else
                     momtEntry.TextureOffset1 = 0u;
@@ -211,8 +243,9 @@ namespace MultiConverterLib
                 filename = AddFilename(momtEntry.TextureOffset2);
                 if (filename != string.Empty)
                 {
-                    var idx = FilenamePosition.IndexOf(filename);
-                    momtEntry.TextureOffset2 = (uint)idx;
+                    var idx = FilenamePosition[filename];
+                    momtEntry.TextureOffset2 = idx;
+                    //Console.WriteLine($"TextureOffset 2 [Entry: {i}]: filename: {filename} pos: {idx}");
                 }
                 else
                     momtEntry.TextureOffset2 = 0u;
@@ -228,8 +261,9 @@ namespace MultiConverterLib
                 filename = AddFilename(momtEntry.TextureOffset3);
                 if (filename != string.Empty)
                 {
-                    var idx = FilenamePosition.IndexOf(filename);
-                    momtEntry.TextureOffset3 = (uint)idx;
+                    var idx = FilenamePosition[filename];
+                    momtEntry.TextureOffset3 = idx;
+                    //Console.WriteLine($"TextureOffset 3 [Entry: {i}]: filename: {filename} pos: {idx}");
                 }
                 else
                     momtEntry.TextureOffset3 = 0u;
@@ -287,12 +321,16 @@ namespace MultiConverterLib
         {
             if (fdid != 0)
             {
-                var textureFilename = Listfile.LookupFilename(fdid, ".wmo", System.IO.Path.GetFileName(wmoName));
-                // Add the filename to the position list
-                if (!FilenamePosition.Contains(textureFilename + "\0"))
-                    FilenamePosition.Add(textureFilename + "\0");
+                var textureFilename = Listfile.LookupFilename(fdid, ".wmo", wmoName).Replace('/', '\\');
+                var texFilename = textureFilename + "\0";
 
-                return textureFilename + "\0";
+                if (!FilenamePosition.ContainsKey(texFilename))
+                {
+                    FilenamePosition.Add(texFilename, TextureOffset);
+                    TextureOffset += (uint)texFilename.Length;
+                }
+
+                return texFilename;
             }
 
             return string.Empty;
@@ -348,6 +386,16 @@ namespace MultiConverterLib
 
             return textureSize;
         }
+
+        private uint CalculateDoodadSize()
+        {
+            var doodadSize = 0u;
+            foreach (var doodad in DoodadsPosition)
+                doodadSize += (uint)doodad.Value.Length;
+            foreach (var doodad in FilenamePadding)
+                doodadSize += doodad.Value;
+            return doodadSize;
+        }
     }
 
     public class MOMT
@@ -365,5 +413,16 @@ namespace MultiConverterLib
         public uint Color;
         public uint Flag2;
         public uint[] RuntimeData = new uint[4];
+    }
+
+    public class MODD
+    {
+        public byte[] OffsetToName = new byte[3];
+        public byte Flags;
+        public float[] Position = new float[3];
+        public float[] Rotation = new float[3];
+        public float RotationW;
+        public float Scale;
+        public byte[] Color = new byte[4];
     }
 }

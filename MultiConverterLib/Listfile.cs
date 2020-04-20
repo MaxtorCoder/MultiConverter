@@ -58,8 +58,6 @@ namespace MultiConverterLib
 
         public static string LookupFilename(uint id, string extension, string modelname, string downloadExtension = "blp")
         {
-            modelname = modelname.Replace(" - copy.wmo", "");
-
             // Lookup the Id in the listfile, if it does not exist
             // download and place in blp/<extension>/<modelname>/<blpname>
             if (FiledataPair.TryGetValue(id, out string filename))
@@ -83,7 +81,9 @@ namespace MultiConverterLib
                         Directory.CreateDirectory($"Unk/{downloadExtension}/{newExtension}/{modelname}");
 
                     if (File.Exists(pathName))
-                        Console.WriteLine($"Filename: {newFilename} (Length: {newFilename.Length} ID: {id})");
+                    {
+                        Console.WriteLine($"Filename: {pathName} (Length: {pathName.Length} ID: {id})");
+                    }
                     else
                     {
                         Console.WriteLine($"Downloading: {newFilename} (Id: {id})");
