@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MultiConverterLib
+namespace MultiConverter.Lib.Converters.Base
 {
     public class ChunkedWowFile : WowFile
     {

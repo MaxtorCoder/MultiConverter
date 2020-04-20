@@ -1,4 +1,4 @@
-﻿namespace MultiConverterLib
+﻿namespace MultiConverter.Lib.Converters.Base
 {
     public interface IConverter
     {

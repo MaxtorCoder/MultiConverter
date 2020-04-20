@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Linq;
+using MultiConverter.Lib.Converters.Base;
 
-namespace MultiConverterLib
+namespace MultiConverter.Lib.Converters
 {
     /// <summary>
     /// TODO : Take into account the ribbons, fix animation id, fix particles blend
@@ -12,21 +13,22 @@ namespace MultiConverterLib
     public class M2Converter : WowFile, IConverter
     {
         public bool NeedFix { get; private set; } = true;
-        private bool fix_helm_ofs;
+
+        private bool fixHelmOffset;
         private int particleCount;
         private uint particleOffset, texturesSize;
-        private string ModelName;
-        private int animOfs, nAnim, animLookupOfs, nAnimLookups, nTextures, texturesOfs, dataSize;
+        private string modelName;
+        private int animOffset, animCount, animLookupOffset, animLookupCount, textureCount, textureOffset, dataSize;
 
         private HashSet<uint> shiftedOfs                = new HashSet<uint>();
         private Dictionary<int, byte[]> multitextInfo   = new Dictionary<int, byte[]>();
-        private List<SkinFix> skins                     = new List<SkinFix>();
+        private List<SkinConverter> skins               = new List<SkinConverter>();
         private Dictionary<string, (int, int)> Textures = new Dictionary<string, (int, int)>();
         private Dictionary<string, uint> Chunks         = new Dictionary<string, uint>();
 
         public M2Converter(string m2, bool fix_helm) : base(m2)
         {
-            fix_helm_ofs = fix_helm;
+            fixHelmOffset = fix_helm;
 
             if (ReadUInt(0x4) <= 264)
                 NeedFix = false;
@@ -57,13 +59,13 @@ namespace MultiConverterLib
                                 var modelNameOfs            = reader.ReadUInt32() + 8;
 
                                 reader.BaseStream.Position  = modelNameOfs;
-                                ModelName                   = new string(reader.ReadChars(modelNameSize)).Replace("\0", "");
+                                modelName                   = new string(reader.ReadChars(modelNameSize)).Replace("\0", "");
                                 reader.BaseStream.Position  = offset;
 
                                 // Skip to M2Array<Texture>.
                                 reader.ReadBytes(0x50);
-                                nTextures                   = reader.ReadInt32();
-                                texturesOfs                 = reader.ReadInt32();
+                                textureCount                   = reader.ReadInt32();
+                                textureOffset                 = reader.ReadInt32();
 
                                 reader.BaseStream.Position = offset + size;
                                 break;
@@ -113,7 +115,7 @@ namespace MultiConverterLib
             {
                 var textureId = reader.ReadUInt32();
 
-                var filename = Listfile.LookupFilename(textureId, ".m2", ModelName).Replace('/', '\\');
+                var filename = Listfile.LookupFilename(textureId, ".m2", modelName).Replace('/', '\\');
                 if (!Textures.ContainsKey(filename + "\0\0"))
                     Textures.Add(filename + "\0\0", (filename.Length, 1));
                 else
@@ -212,7 +214,7 @@ namespace MultiConverterLib
             // update version
             WriteUInt(0x4, 264);
 
-            if (fix_helm_ofs)
+            if (fixHelmOffset)
                 FixHelmOffset();
 
             return true;
@@ -225,17 +227,17 @@ namespace MultiConverterLib
             // Write `0` block at the end of the file.
             AddEmptyBytes(dataSize, (int)texturesSize + textureBlockSize);
 
-            for (var i = 0; i < nTextures; ++i)
+            for (var i = 0; i < textureCount; ++i)
             {
                 // TEX_COMPONENT_HARDCODED
-                var isHarcoded = ReadUInt(texturesOfs) == 0;
+                var isHarcoded = ReadUInt(textureOffset) == 0;
                 if (isHarcoded)
                 {
                     var texture = Textures.First();
 
                     // Write Filename Length and Offset of Filename;
-                    WriteUInt(texturesOfs + 8, (uint)texture.Value.Item1);
-                    WriteUInt(texturesOfs + 12, (uint)dataSize);
+                    WriteUInt(textureOffset + 8, (uint)texture.Value.Item1);
+                    WriteUInt(textureOffset + 12, (uint)dataSize);
 
                     for (var j = 0; j < texture.Value.Item1; ++j)
                         WriteChar(dataSize + j, texture.Key[j]);
@@ -245,7 +247,7 @@ namespace MultiConverterLib
                 }
 
                 // Block reading finished, add 16 (4 * sizeof(uint))
-                texturesOfs += textureBlockSize;
+                textureOffset += textureBlockSize;
             }
         }
 
@@ -537,7 +539,7 @@ namespace MultiConverterLib
                 if (!File.Exists(s))
                     continue;
 
-                SkinFix sf = new SkinFix(s);
+                SkinConverter sf = new SkinConverter(s);
                 sf.Fix(ref texture_unit_lookup, ref blend_override, n_transparency_lookup);
                 skins.Add(sf);
             }
@@ -577,8 +579,8 @@ namespace MultiConverterLib
 
         private short AnimationIndex(int anim_id)
         {
-            for (int i = 0; i < nAnim; i++)
-                if (ReadInt(animOfs + i * 0x40) == anim_id)
+            for (int i = 0; i < animCount; i++)
+                if (ReadInt(animOffset + i * 0x40) == anim_id)
                     return (short)i;
 
             return -1;
@@ -588,15 +590,15 @@ namespace MultiConverterLib
         {
             // if new_id < nAnimLookups => animLookups[new_id] should be = old_pos
 
-            if (nAnimLookups > new_id && ReadShort(animLookupOfs + 0x2 * new_id) == old_pos)
-                WriteShort(animLookupOfs + 0x2 * new_id, new_pos);
+            if (animLookupCount > new_id && ReadShort(animLookupOffset + 0x2 * new_id) == old_pos)
+                WriteShort(animLookupOffset + 0x2 * new_id, new_pos);
             else
             {
-                for (int i = 0; i < nAnimLookups; ++i)
+                for (int i = 0; i < animLookupCount; ++i)
                 {
-                    if (ReadShort(animLookupOfs + i * 0x2) == old_pos)
+                    if (ReadShort(animLookupOffset + i * 0x2) == old_pos)
                     {
-                        WriteShort(animLookupOfs + 0x2 * i, new_pos);
+                        WriteShort(animLookupOffset + 0x2 * i, new_pos);
                         break;
                     }
                 }
@@ -618,14 +620,14 @@ namespace MultiConverterLib
 
         private void FixAnimations()
         {
-            nAnim = ReadInt(0x1C);
-            animOfs = ReadInt(0x20);
-            nAnimLookups = ReadInt(0x24);
-            animLookupOfs = ReadInt(0x28);
+            animCount = ReadInt(0x1C);
+            animOffset = ReadInt(0x20);
+            animLookupCount = ReadInt(0x24);
+            animLookupOffset = ReadInt(0x28);
 
-            for (int i = 0; i < nAnim; i++)
+            for (int i = 0; i < animCount; i++)
             {
-                int p = animOfs + i * 0x40;
+                int p = animOffset + i * 0x40;
                 ushort id = ReadUShort(p);
 
                 if (id > 505) // max tlk anim id

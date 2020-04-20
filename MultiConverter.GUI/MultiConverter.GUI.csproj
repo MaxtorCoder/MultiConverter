@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Version>3.6.0</Version>
+    <PackageId>WoW - MultiConverter</PackageId>
+    <Authors>MaxtorCoder &amp; Adspartan</Authors>
+    <Company>The Fuckporting Company</Company>
+    <Product>WoW - MultiConverter</Product>
+    <Copyright>Copyright ©  2018 - 2020</Copyright>
+    <Description>WoW Multi-Converter made by Adspartan and maintained by MaxtorCoder.
+
+Code is on https://github.com/MaxtorCoder/MultiConverter</Description>
+    <RepositoryUrl>https://github.com/MaxtorCoder/MultiConverter</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MultiConverter.Lib\MultiConverter.Lib.csproj" />
+  </ItemGroup>
+
+</Project>

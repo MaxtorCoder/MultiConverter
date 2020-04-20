@@ -1,14 +1,15 @@
-﻿using System;
+﻿using MultiConverter.Lib.Converters.Base;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace MultiConverterLib
+namespace MultiConverter.Lib.Converters
 {
-    class SkinFix : WowFile
+    public class SkinConverter : WowFile
     {
         private HashSet<uint> badsubmesh;
 
-        public SkinFix(string skin) : base(skin)
+        public SkinConverter(string skin) : base(skin)
         {
             badsubmesh = new HashSet<uint>();
         }

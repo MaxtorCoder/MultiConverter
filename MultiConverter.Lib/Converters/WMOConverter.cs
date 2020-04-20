@@ -1,22 +1,23 @@
-﻿using System;
+﻿using MultiConverter.Lib.Converters.Base;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace MultiConverterLib
+namespace MultiConverter.Lib.Converters
 {
     public class WMORootConverter : ChunkedWowFile, IConverter
     {
         private string wmoName;
 
-        private Dictionary<string, uint> FilenamePosition = new Dictionary<string, uint>();
-        private Dictionary<uint, string> DoodadsPosition = new Dictionary<uint, string>();
-        private Dictionary<string, uint> FilenamePadding = new Dictionary<string, uint>();
+        private Dictionary<string, uint> filenamePosition = new Dictionary<string, uint>();
+        private Dictionary<uint, string> doodadsPosition = new Dictionary<uint, string>();
+        private Dictionary<string, uint> filenamePadding = new Dictionary<string, uint>();
 
-        private List<MOMT> MOMTEntries = new List<MOMT>();
+        private List<MOMT> momtEntries = new List<MOMT>();
 
-        private uint TextureOffset;
-        private uint DoodadsOffset;
+        private uint textureOffset;
+        private uint doodadsOffset;
 
         public WMORootConverter(string wmo) : base(wmo)
         {
@@ -47,13 +48,13 @@ namespace MultiConverterLib
             else
             {
                 ReadMOMT(pos);
-                var motxSize = CalculateTextureSize(FilenamePosition.Keys.ToList());
+                var motxSize = CalculateTextureSize(filenamePosition.Keys.ToList());
                 AddEmptyBytes(pos, (int)motxSize + 8);
                 WriteHeaderMagic(pos, "MOTX");
                 WriteUInt(pos + 4, motxSize);
 
                 pos += 8;
-                foreach (var texture in FilenamePosition)
+                foreach (var texture in filenamePosition)
                 {
                     var newFilename = texture.Key.ToUpper();
                     for (var j = 0; j < newFilename.Length; ++j)
@@ -104,12 +105,12 @@ namespace MultiConverterLib
                     var filename = Listfile.LookupFilename(filedataid, ".wmo", wmoName, "m2").Replace('/', '\\').Replace("m2", "mdx");
 
                     var remainderCount = 4u - (uint)filename.Length % 4u;
-                    if (!DoodadsPosition.ContainsValue(filename))
+                    if (!doodadsPosition.ContainsValue(filename))
                     {
-                        DoodadsPosition.Add(DoodadsOffset, filename);
-                        DoodadsOffset += (uint)filename.Length;
+                        doodadsPosition.Add(doodadsOffset, filename);
+                        doodadsOffset += (uint)filename.Length;
 
-                        FilenamePadding.Add(filename, remainderCount);
+                        filenamePadding.Add(filename, remainderCount);
                     }
                 }
 
@@ -121,9 +122,9 @@ namespace MultiConverterLib
                 WriteUInt(pos + 0x4, modiSize);
 
                 pos += 0x8;
-                foreach (var filename in DoodadsPosition)
+                foreach (var filename in doodadsPosition)
                 {
-                    var paddingCount = FilenamePadding[filename.Value];
+                    var paddingCount = filenamePadding[filename.Value];
                     var upperFilename = filename.Value.ToUpper();
 
                     for (var i = 0; i < upperFilename.Length; ++i)
@@ -161,7 +162,7 @@ namespace MultiConverterLib
 
         private int FixMODD(int pos)
         {
-            var doodadFilenames = DoodadsPosition.Values.ToList();
+            var doodadFilenames = doodadsPosition.Values.ToList();
 
             WriteHeaderMagic(pos, "MODD");
             int size = ReadInt(pos + 4);
@@ -173,7 +174,7 @@ namespace MultiConverterLib
                 if (doodadFilenames.ElementAtOrDefault(oldOfs) != null)
                 {
                     var filename = doodadFilenames[oldOfs];
-                    var offset = DoodadsPosition.FirstOrDefault(x => x.Value == filename).Key;
+                    var offset = doodadsPosition.FirstOrDefault(x => x.Value == filename).Key;
                     Data[pos] = (byte)offset;
                     // DoodadsPosition.Remove(offset);
                 }
@@ -225,7 +226,7 @@ namespace MultiConverterLib
                 var filename = AddFilename(momtEntry.TextureOffset1);
                 if (filename != string.Empty)
                 {
-                    var idx = FilenamePosition[filename];
+                    var idx = filenamePosition[filename];
                     momtEntry.TextureOffset1 = idx;
                     //Console.WriteLine($"TextureOffset 1 [Entry: {i}]: filename: {filename} pos: {idx}");
                 }
@@ -243,7 +244,7 @@ namespace MultiConverterLib
                 filename = AddFilename(momtEntry.TextureOffset2);
                 if (filename != string.Empty)
                 {
-                    var idx = FilenamePosition[filename];
+                    var idx = filenamePosition[filename];
                     momtEntry.TextureOffset2 = idx;
                     //Console.WriteLine($"TextureOffset 2 [Entry: {i}]: filename: {filename} pos: {idx}");
                 }
@@ -261,7 +262,7 @@ namespace MultiConverterLib
                 filename = AddFilename(momtEntry.TextureOffset3);
                 if (filename != string.Empty)
                 {
-                    var idx = FilenamePosition[filename];
+                    var idx = filenamePosition[filename];
                     momtEntry.TextureOffset3 = idx;
                     //Console.WriteLine($"TextureOffset 3 [Entry: {i}]: filename: {filename} pos: {idx}");
                 }
@@ -280,7 +281,7 @@ namespace MultiConverterLib
                     momtEntry.RuntimeData[j] = ReadUInt(p);
                 }
 
-                MOMTEntries.Add(momtEntry);
+                momtEntries.Add(momtEntry);
             }
 
             return pos + momtSize;
@@ -289,10 +290,10 @@ namespace MultiConverterLib
         private int WriteMOMT(int pos)
         {
             WriteHeaderMagic(pos, "MOMT");
-            WriteInt(pos + 4, MOMTEntries.Count * 64);
+            WriteInt(pos + 4, momtEntries.Count * 64);
             pos += 8;
 
-            foreach (var momt in MOMTEntries)
+            foreach (var momt in momtEntries)
             {
                 WriteUInt(pos, momt.Flag1);
                 WriteUInt(pos + 4, momt.ShaderType);
@@ -324,10 +325,10 @@ namespace MultiConverterLib
                 var textureFilename = Listfile.LookupFilename(fdid, ".wmo", wmoName).Replace('/', '\\');
                 var texFilename = textureFilename + "\0";
 
-                if (!FilenamePosition.ContainsKey(texFilename))
+                if (!filenamePosition.ContainsKey(texFilename))
                 {
-                    FilenamePosition.Add(texFilename, TextureOffset);
-                    TextureOffset += (uint)texFilename.Length;
+                    filenamePosition.Add(texFilename, textureOffset);
+                    textureOffset += (uint)texFilename.Length;
                 }
 
                 return texFilename;
@@ -390,9 +391,9 @@ namespace MultiConverterLib
         private uint CalculateDoodadSize()
         {
             var doodadSize = 0u;
-            foreach (var doodad in DoodadsPosition)
+            foreach (var doodad in doodadsPosition)
                 doodadSize += (uint)doodad.Value.Length;
-            foreach (var doodad in FilenamePadding)
+            foreach (var doodad in filenamePadding)
                 doodadSize += doodad.Value;
             return doodadSize;
         }
