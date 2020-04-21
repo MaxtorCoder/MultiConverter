@@ -1,6 +1,4 @@
 # Multiconverter - WoW 3.3.5a
-[![Model-Changing Discord](https://img.shields.io/discord/407664041016688662.svg?style=flat&logo=discord)](https://discord.gg/vcpwDVN)
-
 ## Information
 Originally written by [Adspartan](https://github.com/Adspartan "Adspartan's Github")
 
@@ -29,3 +27,7 @@ If the .skin files are in the same folder they will be converted too.
 * WMO BFA support
 * ADT BFA support
 * WDT BFA support
+
+## Links
+- [Discord](https://discord.gg/vcpwDVN)
+- [Model Changing](https://model-changing.net/)
