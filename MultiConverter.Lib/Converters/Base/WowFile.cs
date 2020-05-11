@@ -21,7 +21,6 @@ namespace MultiConverter.Lib.Converters.Base
         }
 
         #region read
-
         public char ReadChar(int pos)
         {
             return BitConverter.ToChar(Data, pos);
@@ -50,42 +49,73 @@ namespace MultiConverter.Lib.Converters.Base
         {
             return BitConverter.ToSingle(Data, pos);
         }
-
-
         #endregion
 
         #region write
-
         public void WriteChar(int pos, char value)
         {
-            Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 2);
+            Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 1);
+        }
+        public void WriteChar(char value, ref int pos)
+        {
+            Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 1);
+            pos += 1;
         }
         public void WriteShort(int pos, short value)
         {
             Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 2);
         }
+        public void WriteShort(short value, ref int pos)
+        {
+            Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 2);
+            pos += 2;
+        }
         public void WriteUShort(int pos, ushort value)
         {
             Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 2);
+        }
+        public void WriteUShort(ushort value, ref int pos)
+        {
+            Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 2);
+            pos += 2;
         }
         public void WriteInt(int pos, int value)
         {
             Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 4);
         }
+        public void WriteInt(int value, ref int pos)
+        {
+            Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 4);
+            pos += 4;
+        }
         public void WriteUInt(int pos, uint value)
         {
             Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 4);
+        }
+        public void WriteUInt(uint value, ref int pos)
+        {
+            Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 4);
+            pos += 4;
         }
         public void WriteFloat(int pos, float value)
         {
             Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 4);
         }
+        public void WriteFloat(float value, ref int pos)
+        {
+            Buffer.BlockCopy(BitConverter.GetBytes(value), 0, Data, pos, 4);
+            pos += 4;
+        }
+        public void WriteString(string value, ref int pos)
+        {
+            for (var i = 0; i < value.Length; ++i)
+                WriteChar(pos + i, value[i]);
 
+            pos += value.Length;
+        }
         #endregion
 
-
         #region edit
-
         public void RemoveBytes(int start, int count)
         {
             int size = Data.Length;
@@ -129,28 +159,20 @@ namespace MultiConverter.Lib.Converters.Base
         {
             Buffer.BlockCopy(Data, source_ofs, dest, dest_ofs, count);
         }
-
         #endregion
 
-        public int Size()
-        {
-            return Data.Length;
-        }
+        public int Size() => Data.Length;
 
         public void RemoveOnDisk()
         {
             if (Valid)
-            {
                 File.Delete(Path);
-            }
         }
 
         public virtual void Save()
         {
             if (Valid)
-            {
                 File.WriteAllBytes(Path, Data);
-            }
         }
     };
 }

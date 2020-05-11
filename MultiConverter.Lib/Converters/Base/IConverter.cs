@@ -2,7 +2,7 @@
 {
     public interface IConverter
     {
-        bool Fix();
-        void Save();
+        void Read(byte[] inData);
+        void Write(string filename);
     }
 }

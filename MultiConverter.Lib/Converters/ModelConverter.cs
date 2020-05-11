@@ -10,7 +10,7 @@ namespace MultiConverter.Lib.Converters
     /// <summary>
     /// TODO : Take into account the ribbons, fix animation id, fix particles blend
     /// </summary>
-    public class M2Converter : WowFile, IConverter
+    public class M2Converter : WowFile
     {
         public bool NeedFix { get; private set; } = true;
 
@@ -23,7 +23,7 @@ namespace MultiConverter.Lib.Converters
         private HashSet<uint> shiftedOfs                = new HashSet<uint>();
         private Dictionary<int, byte[]> multitextInfo   = new Dictionary<int, byte[]>();
         private List<SkinConverter> skins               = new List<SkinConverter>();
-        private Dictionary<string, (int, int)> Textures = new Dictionary<string, (int, int)>();
+        private Dictionary<string, int> Textures        = new Dictionary<string, int>();
         private Dictionary<string, uint> Chunks         = new Dictionary<string, uint>();
 
         public M2Converter(string m2, bool fix_helm) : base(m2)
@@ -116,13 +116,7 @@ namespace MultiConverter.Lib.Converters
                 var textureId = reader.ReadUInt32();
 
                 var filename = Listfile.LookupFilename(textureId, ".m2", modelName).Replace('/', '\\');
-                if (!Textures.ContainsKey(filename + "\0\0"))
-                    Textures.Add(filename + "\0\0", (filename.Length, 1));
-                else
-                {
-                    var value = Textures[filename + "\0\0"];
-                    Textures[filename + "\0\0"] = (value.Item1, value.Item2++);
-                }
+                Textures.Add(filename + "\0\0", filename.Length);
             }
         }
 
@@ -134,7 +128,9 @@ namespace MultiConverter.Lib.Converters
 
             RemoveLegionChunks();
 
-            FixTXID();
+            if (Textures.Count > 0)
+                FixTXID();
+
             FixCamera();
             FixAnimations();
             FixSkins();
@@ -236,13 +232,13 @@ namespace MultiConverter.Lib.Converters
                     var texture = Textures.First();
 
                     // Write Filename Length and Offset of Filename;
-                    WriteUInt(textureOffset + 8, (uint)texture.Value.Item1);
+                    WriteUInt(textureOffset + 8, (uint)texture.Value);
                     WriteUInt(textureOffset + 12, (uint)dataSize);
 
-                    for (var j = 0; j < texture.Value.Item1; ++j)
+                    for (var j = 0; j < texture.Value; ++j)
                         WriteChar(dataSize + j, texture.Key[j]);
 
-                    dataSize += texture.Value.Item1 + 2;
+                    dataSize += texture.Value + 2;
                     Textures.Remove(texture.Key);
                 }
 
@@ -500,7 +496,6 @@ namespace MultiConverter.Lib.Converters
                 RemoveBytes(pos, 0x14);
             }
         }
-
 
         /// <summary>
         /// Get the id
@@ -974,7 +969,7 @@ namespace MultiConverter.Lib.Converters
             uint result = 0;
 
             foreach (var texture in Textures.Values)
-                result += (uint)texture.Item1 + 1;
+                result += (uint)texture + 1;
 
             return result;
         }

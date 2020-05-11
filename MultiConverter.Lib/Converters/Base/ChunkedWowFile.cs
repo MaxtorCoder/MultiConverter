@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MultiConverter.Lib.Converters.Base
 {
@@ -31,6 +28,11 @@ namespace MultiConverter.Lib.Converters.Base
         public void WriteHeaderMagic(int pos, string magic)
         {
             WriteInt(pos, MagicToInt(magic));
+        }
+
+        public void WriteHeaderMagic(string magic, ref int pos)
+        {
+            WriteInt(MagicToInt(magic), ref pos);
         }
 
         /// <summary>
@@ -121,9 +123,10 @@ namespace MultiConverter.Lib.Converters.Base
         {
             return ChunksOfs(start, MagicToInt(end_magic));
         }
+
         public Dictionary<int, int> ChunksOfs(int start, int end_magic)
         {
-            Dictionary<int, int> chunk_pos = new Dictionary<int, int>();
+            var chunk_pos = new Dictionary<int, int>();
 
             if (start < Data.Length)
             {
@@ -136,7 +139,8 @@ namespace MultiConverter.Lib.Converters.Base
                 while (magic != end_magic && pos <= Data.Length - 8)
                 {
                     magic = ReadInt(pos);
-                    chunk_pos.Add(magic, pos);
+                    if (!chunk_pos.ContainsKey(magic))
+                        chunk_pos.Add(magic, pos);
 
                     int size = ReadInt(pos + 0x4) + 0x8;
                     pos += size;
@@ -144,6 +148,21 @@ namespace MultiConverter.Lib.Converters.Base
             }
 
             return chunk_pos;
+        }
+
+        public bool HasChunk(string chunkMagic)
+        {
+            var magic = MagicToInt(chunkMagic);
+            var chunks = ChunksOfs(0, magic);
+
+            return chunks.ContainsKey(magic);
+        }
+
+        public int SkipChunk(int pos, string magic)
+        {
+            RemoveUnwantedChunksUntil(pos, magic);
+            // Console.WriteLine($"Magic: {magic} Current Pos: {pos} New Pos: {pos + ReadInt(pos + 0x4) + 0x8}");
+            return pos + ReadInt(pos + 0x4) + 0x8;
         }
     }
 }

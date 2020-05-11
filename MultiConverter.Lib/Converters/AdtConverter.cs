@@ -1,13 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using MultiConverter.Lib.Converters.Base;
+using MultiConverter.Lib.Common;
+using MultiConverter.Lib.Util;
 
 namespace MultiConverter.Lib.Converters
 {
-    public class AdtConverter : IConverter
+    public class AdtConverter
     {
+        private string modelname;
         private string file;
         private ChunkedWowFile adt;
         private ChunkedWowFile obj;
@@ -15,13 +17,23 @@ namespace MultiConverter.Lib.Converters
         private bool water;
         private bool models;
         private int textureCount = 0;
-        int currentPos = 0;
+
+        private int adtPos = 0;
+        private int texPos = 0;
+        private int objPos = 0;
+
+        private Dictionary<uint, string> MDXFilenames   = new Dictionary<uint, string>();
+        private Dictionary<uint, string> WMOFilenames   = new Dictionary<uint, string>();
+        private Dictionary<uint, string> MapTextures    = new Dictionary<uint, string>();
+        private List<MDDF> MDDFs                        = new List<MDDF>();
+        private List<MODF> MODFs                        = new List<MODF>();
 
         public AdtConverter(string path, bool h2o, bool model)
         {
-            file = path;
-            water = h2o;
-            models = model;
+            file    = path;
+            water   = h2o;
+            models  = model;
+            modelname = Path.GetFileNameWithoutExtension(path);
 
             adt = new ChunkedWowFile(path);
             obj = new ChunkedWowFile(path.Replace(".adt", "_obj0.adt"));
@@ -34,26 +46,41 @@ namespace MultiConverter.Lib.Converters
 
         public bool Fix()
         {
-            //                                           already converted
+            // already converted
             if (!adt.Valid || !obj.Valid || !tex.Valid || adt.ReadUInt(0x18) > 0)
-            {
                 return false;
-            }
+
+            // Update the version
+            adt.WriteInt(8, 12);
 
             CreateMCIN();
-            RetrieveMTEX();
-            RetrieveMMDX();
-            RetrieveMMID();
-            RetrieveMWMO();
-            RetrieveMWID();
-            RetrieveMDDF();
-            RetrieveMODF();
+
+            if (adt.HasChunk("MTEX"))
+                RetrieveMTEX();
+            if (adt.HasChunk("MMDX"))
+                RetrieveMMDX();
+            if (tex.HasChunk("MDID") && tex.HasChunk("MHID"))       //< Textures.
+            {
+                RetrieveTextures();
+                WriteMTEX();
+            }
+
+            if (obj.HasChunk("MMID") && obj.HasChunk("MWMO") && obj.HasChunk("MWID"))
+            {
+                RetrieveMMID();
+                RetrieveMWMO();
+                RetrieveMWID();
+            }
+
+            if (obj.HasChunk("MDDF") && obj.HasChunk("MODF"))
+            {
+
+            }
+
             CheckMH2O();
 
             for (int i = 0; i < 256; ++i)
-            {
                 RetrieveMCNK(i);
-            }
 
             CheckMFBO();
 
@@ -62,6 +89,59 @@ namespace MultiConverter.Lib.Converters
             return true;
         }
 
+        private void CreateMDXChunks()
+        {
+            var calculatedSize = CalculateChunkSize(MDXFilenames);
+            adt.AddEmptyBytes(adtPos, (int)calculatedSize + 8);
+            adt.WriteHeaderMagic("MMDX", ref adtPos);
+            adt.WriteUInt(calculatedSize, ref adtPos);
+
+            foreach (var filename in MDXFilenames.Values)
+                adt.WriteString(filename, ref adtPos);
+
+            adt.AddEmptyBytes(adtPos, (MDXFilenames.Count * 4) + 8);
+            adt.WriteHeaderMagic("MMID", ref adtPos);
+            adt.WriteInt(MDXFilenames.Count * 4, ref adtPos);
+
+            var mdxFilenames = MDXFilenames.Values.ToList();
+            var lastMDX = string.Empty;
+            foreach (var filename in mdxFilenames)
+            {
+                if (lastMDX == string.Empty)
+                    adt.WriteInt(0, ref adtPos);
+                else
+                    adt.WriteInt(lastMDX.Length, ref adtPos);
+
+                lastMDX = filename;
+            }
+        }
+
+        private void CreateWMOChunks()
+        {
+            var calculatedSize = CalculateChunkSize(WMOFilenames);
+            adt.AddEmptyBytes(adtPos, (int)calculatedSize + 8);
+            adt.WriteHeaderMagic("MWMO", ref adtPos);
+            adt.WriteUInt(calculatedSize, ref adtPos);
+
+            foreach (var filename in WMOFilenames.Values)
+                adt.WriteString(filename, ref adtPos);
+
+            adt.AddEmptyBytes(adtPos, (WMOFilenames.Count * 4) + 8);
+            adt.WriteHeaderMagic("MWID", ref adtPos);
+            adt.WriteInt(WMOFilenames.Count * 4, ref adtPos);
+
+            var wmoFilenames = WMOFilenames.Values.ToList();
+            var lastWMO = string.Empty;
+            foreach (var filename in wmoFilenames)
+            {
+                if (lastWMO == string.Empty)
+                    adt.WriteInt(0, ref adtPos);
+                else
+                    adt.WriteInt(lastWMO.Length, ref adtPos);
+
+                lastWMO = filename;
+            }
+        }
 
         private void CreateMCIN()
         {
@@ -71,7 +151,7 @@ namespace MultiConverter.Lib.Converters
             adt.WriteInt(0x18, 0x40);
 
             // after mcin chunk
-            currentPos = 0x1008 + 0x54;
+            adtPos = 0x1008 + 0x54;
         }
 
         private void RetrieveMTEX()
@@ -83,15 +163,15 @@ namespace MultiConverter.Lib.Converters
             int size = tex.ReadInt(start_mtex + 4) + 0x8;
 
             // start MTEX
-            adt.AddEmptyBytes(currentPos, size);
+            adt.AddEmptyBytes(adtPos, size);
 
-            tex.BlockCopy(start_mtex, adt, currentPos, size);
+            tex.BlockCopy(start_mtex, adt, adtPos, size);
             // remove unecessary data
             tex.RemoveBytes(0x0, start_mtex + size);
 
-            adt.WriteInt(0x1C, currentPos - 0x14);
+            adt.WriteInt(0x1C, adtPos - 0x14);
 
-            for (int i = currentPos + 0x8; i < currentPos + size; ++i)
+            for (int i = adtPos + 0x8; i < adtPos + size; ++i)
             {
                 if (adt.Data[i] == 0)
                 {
@@ -99,7 +179,7 @@ namespace MultiConverter.Lib.Converters
                 }
             }
 
-            currentPos += size;
+            adtPos += size;
         }
 
         private void RetrieveMMDX()
@@ -110,20 +190,20 @@ namespace MultiConverter.Lib.Converters
             {
                 size += obj.ReadInt(0x10);
 
-                adt.AddEmptyBytes(currentPos, size);
-                obj.BlockCopy(0xC, adt, currentPos, size);
+                adt.AddEmptyBytes(adtPos, size);
+                obj.BlockCopy(0xC, adt, adtPos, size);
                 obj.RemoveBytes(0, size + 0xC);
 
             }
             else
             {
-                adt.AddEmptyBytes(currentPos, size);
-                adt.WriteHeaderMagic(currentPos, "MMDX");
+                adt.AddEmptyBytes(adtPos, size);
+                adt.WriteHeaderMagic(adtPos, "MMDX");
                 obj.RemoveBytes(0, obj.ReadInt(0x10) + 0xC + 0x8);
             }
 
-            adt.WriteInt(0x20, currentPos - 0x14);
-            currentPos += size;
+            adt.WriteInt(0x20, adtPos - 0x14);
+            adtPos += size;
         }
 
         private void RetrieveMMID()
@@ -133,20 +213,19 @@ namespace MultiConverter.Lib.Converters
             if (models)
             {
                 size += obj.ReadInt(0x4);
-                adt.AddEmptyBytes(currentPos, size);
-                obj.BlockCopy(0, adt, currentPos, size);
+                adt.AddEmptyBytes(adtPos, size);
+                obj.BlockCopy(0, adt, adtPos, size);
                 obj.RemoveBytes(0, size);
             }
             else
             {
-                adt.AddEmptyBytes(currentPos, size);
-                adt.WriteHeaderMagic(currentPos, "MMID");
+                adt.AddEmptyBytes(adtPos, size);
+                adt.WriteHeaderMagic(adtPos, "MMID");
                 obj.RemoveBytes(0, obj.ReadInt(0x4) + 0x8);
             }
 
-
-            adt.WriteInt(0x24, currentPos - 0x14);
-            currentPos += size;
+            adt.WriteInt(0x24, adtPos - 0x14);
+            adtPos += size;
         }
 
         private void RetrieveMWMO()
@@ -156,20 +235,20 @@ namespace MultiConverter.Lib.Converters
             if (models)
             {
                 size += obj.ReadInt(0x4);
-                adt.AddEmptyBytes(currentPos, size);
-                obj.BlockCopy(0, adt, currentPos, size);
+                adt.AddEmptyBytes(adtPos, size);
+                obj.BlockCopy(0, adt, adtPos, size);
                 obj.RemoveBytes(0, size);
             }
             else
             {
-                adt.AddEmptyBytes(currentPos, size);
-                adt.WriteHeaderMagic(currentPos, "MWMO");
+                adt.AddEmptyBytes(adtPos, size);
+                adt.WriteHeaderMagic(adtPos, "MWMO");
                 obj.RemoveBytes(0, obj.ReadInt(0x4) + 0x8);
             }
 
 
-            adt.WriteInt(0x28, currentPos - 0x14);
-            currentPos += size;
+            adt.WriteInt(0x28, adtPos - 0x14);
+            adtPos += size;
         }
 
         private void RetrieveMWID()
@@ -179,63 +258,80 @@ namespace MultiConverter.Lib.Converters
             if (models)
             {
                 size += obj.ReadInt(0x4);
-                adt.AddEmptyBytes(currentPos, size);
-                obj.BlockCopy(0, adt, currentPos, size);
+                adt.AddEmptyBytes(adtPos, size);
+                obj.BlockCopy(0, adt, adtPos, size);
                 obj.RemoveBytes(0, size);
             }
             else
             {
-                adt.AddEmptyBytes(currentPos, size);
-                adt.WriteHeaderMagic(currentPos, "MWID");
+                adt.AddEmptyBytes(adtPos, size);
+                adt.WriteHeaderMagic(adtPos, "MWID");
                 obj.RemoveBytes(0, obj.ReadInt(0x4) + 0x8);
             }
 
-            adt.WriteInt(0x2C, currentPos - 0x14);
-            currentPos += size;
+            adt.WriteInt(0x2C, adtPos - 0x14);
+            adtPos += size;
         }
 
-        private void RetrieveMDDF()
+        private void RetrieveTextures()
         {
-            int size = 0x8;
-
-            if (models)
+            using (var stream = new MemoryStream(tex.Data))
+            using (var reader = new BinaryReader(stream))
             {
-                size += obj.ReadInt(0x4);
-                adt.AddEmptyBytes(currentPos, size);
-                obj.BlockCopy(0, adt, currentPos, size);
-                obj.RemoveBytes(0, size);
-            }
-            else
-            {
-                adt.AddEmptyBytes(currentPos, size);
-                adt.WriteHeaderMagic(currentPos, "MDDF");
-                obj.RemoveBytes(0, obj.ReadInt(0x4) + 0x8);
-            }
+                while (reader.BaseStream.Position < reader.BaseStream.Length)
+                {
+                    var chunk   = new string(reader.ReadChars(4));
+                    var size    = reader.ReadUInt32();
 
-            adt.WriteInt(0x30, currentPos - 0x14);
-            currentPos += size;
+                    switch (chunk)
+                    {
+                        case "PMAM":
+                            texPos += (int)size + 8;
+                            reader.BaseStream.Position += size;
+                            break;
+                        case "DIDM":    //< Texures
+                            for (var i = 0; i < size / 4; ++i)
+                            {
+                                var filedataid  = reader.ReadUInt32();
+                                if (filedataid != 0)
+                                {
+                                    var filename = Listfile.LookupFilename(filedataid, ".adt", modelname) + "\0";
+                                    MapTextures.Add(filedataid, filename);
+                                }
+                            }
+
+                            texPos += (int)size + 8;
+                            break;
+                        case "DIHM":    //< Textures as well
+                            for (var i = 0; i < size / 4; ++i)
+                            {
+                                var filedataid = reader.ReadUInt32();
+                                if (filedataid != 0)
+                                {
+                                    var filename = Listfile.LookupFilename(filedataid, ".adt", modelname) + "\0";
+                                    MapTextures.Add(filedataid, filename);
+                                }
+                            }
+
+                            texPos += (int)size + 8;
+                            break;
+                        default:
+                            reader.BaseStream.Position += size;
+                            break;
+                    }
+                }
+            }
         }
 
-        private void RetrieveMODF()
+        private void WriteMTEX()
         {
-            int size = 0x8;
+            var calculatedSize = CalculateChunkSize(MapTextures);
+            adt.AddEmptyBytes(adtPos, (int)calculatedSize + 8);
+            adt.WriteHeaderMagic("MTEX", ref adtPos);
+            adt.WriteUInt(calculatedSize, ref adtPos);
 
-            if (models)
-            {
-                size += obj.ReadInt(0x4);
-                adt.AddEmptyBytes(currentPos, size);
-                obj.BlockCopy(0, adt, currentPos, size);
-                obj.RemoveBytes(0, size);
-            }
-            else
-            {
-                adt.AddEmptyBytes(currentPos, size);
-                adt.WriteHeaderMagic(currentPos, "MODF");
-                obj.RemoveBytes(0, obj.ReadInt(0x4) + 0x8);
-            }
-
-            adt.WriteInt(0x34, currentPos - 0x14);
-            currentPos += size;
+            foreach (var texture in MapTextures.Values)
+                adt.WriteString(texture, ref adtPos);
         }
 
         private void Fix_MH2O_Info(int pos)
@@ -380,18 +476,18 @@ namespace MultiConverter.Lib.Converters
 
         private void CheckMH2O()
         {
-            if (adt.IsChunk(currentPos, "MH2O"))
+            if (adt.IsChunk(adtPos, "MH2O"))
             {
                 if (water)
                 {
-                    FixMH2O(currentPos + 0x8);
-                    int size = adt.ReadInt(currentPos + 4) + 0x8;
-                    adt.WriteInt(0x3C, currentPos - 0x14);
-                    currentPos += size;
+                    FixMH2O(adtPos + 0x8);
+                    int size = adt.ReadInt(adtPos + 4) + 0x8;
+                    adt.WriteInt(0x3C, adtPos - 0x14);
+                    adtPos += size;
                 }
                 else
                 {
-                    adt.RemoveBytes(currentPos, adt.ReadInt(currentPos + 4) + 0x8);
+                    adt.RemoveBytes(adtPos, adt.ReadInt(adtPos + 4) + 0x8);
                     adt.WriteInt(0x3C, 0);
                 }
             }
@@ -440,16 +536,26 @@ namespace MultiConverter.Lib.Converters
 
         private void RetrieveMCNK(int id = 0)
         {
-            adt.RemoveUnwantedChunksUntil(currentPos, (int)chunks.MCNK);
-            tex.RemoveUnwantedChunksUntil(0, (int)chunks.MCNK);
-            obj.RemoveUnwantedChunksUntil(0, (int)chunks.MCNK);
+            // adt.RemoveUnwantedChunksUntil(0, (int)chunks.MCNK);
+            // tex.RemoveUnwantedChunksUntil(0, (int)chunks.MCNK);
+            // obj.RemoveUnwantedChunksUntil(0, (int)chunks.MCNK);
 
-            int size_root_mcnk = adt.ReadInt(currentPos + 0x4);
-            int size_tex_mcnk = tex.ReadInt(0x4);
-            int size_obj_mcnk = obj.ReadInt(0x4);
-            ChunkedWowFile root_mcnk = new ChunkedWowFile(adt.Data, currentPos, size_root_mcnk + 0x8);
-            ChunkedWowFile tex_mcnk = new ChunkedWowFile(tex.Data, 8, size_tex_mcnk);
-            ChunkedWowFile obj_mcnk = new ChunkedWowFile(obj.Data, 8, size_obj_mcnk);
+            var root_mcnk_int           = ChunkedWowFile.MagicToInt("MCNK");
+            var mcnk_ofs_root           = adt.ChunksOfs(0, root_mcnk_int);
+            var mcnk_ofs_tex            = tex.ChunksOfs(0, root_mcnk_int);
+            var mcnk_ofs_obj            = obj.ChunksOfs(0, root_mcnk_int);
+
+            int size_root_mcnk          = adt.ReadInt(mcnk_ofs_root[root_mcnk_int] + 4);
+            int size_tex_mcnk           = tex.ReadInt(mcnk_ofs_tex[root_mcnk_int] + 4);
+            int size_obj_mcnk           = obj.ReadInt(mcnk_ofs_obj[root_mcnk_int] + 4);
+
+            mcnk_ofs_root.Remove(root_mcnk_int);
+            mcnk_ofs_tex.Remove(root_mcnk_int);
+            mcnk_ofs_obj.Remove(root_mcnk_int);
+
+            ChunkedWowFile root_mcnk    = new ChunkedWowFile(adt.Data, mcnk_ofs_root[root_mcnk_int] + 8, size_root_mcnk);
+            ChunkedWowFile tex_mcnk     = new ChunkedWowFile(tex.Data, mcnk_ofs_tex[root_mcnk_int] + 8, size_tex_mcnk);
+            ChunkedWowFile obj_mcnk     = new ChunkedWowFile(obj.Data, mcnk_ofs_obj[root_mcnk_int] + 8, size_obj_mcnk);
 
             // remove MCNK in split files
             tex.RemoveBytes(0, size_tex_mcnk + 8);
@@ -645,17 +751,15 @@ namespace MultiConverter.Lib.Converters
                 ofsMCSE = 0;
             }
 
+            adt.AddEmptyBytes(adtPos, root_mcnk.Size() - size_root_mcnk - 8);
+            root_mcnk.BlockCopy(0, adt.Data, adtPos, root_mcnk.Size());
 
+            FillMCIN(id, adtPos, root_mcnk.Size());
 
-            adt.AddEmptyBytes(currentPos, root_mcnk.Size() - size_root_mcnk - 8);
-            root_mcnk.BlockCopy(0, adt.Data, currentPos, root_mcnk.Size());
+            adt.WriteInt(adtPos, ChunkedWowFile.MagicToInt("MCNK")); // should not be necessary
+            adt.WriteInt(adtPos + 0x4, root_mcnk.Size() - 0x8);
 
-            FillMCIN(id, currentPos, root_mcnk.Size());
-
-            adt.WriteInt(currentPos, ChunkedWowFile.MagicToInt("MCNK")); // should not be necessary
-            adt.WriteInt(currentPos + 0x4, root_mcnk.Size() - 0x8);
-
-            int ofsPos = currentPos + 0x8; // MCNK header for offsets
+            int ofsPos = adtPos + 0x8; // MCNK header for offsets
 
             // Update headers
             adt.WriteInt(ofsPos + 0x4, (id % 16));
@@ -688,7 +792,7 @@ namespace MultiConverter.Lib.Converters
             adt.WriteInt(ofsPos + 0x78, 0);
             adt.WriteInt(ofsPos + 0x7C, 0);
 
-            currentPos += root_mcnk.Size();
+            adtPos += root_mcnk.Size();
         }
 
         private void FillMCIN(int id, int ofs, int size)
@@ -700,12 +804,12 @@ namespace MultiConverter.Lib.Converters
 
         private void CheckMFBO()
         {
-            adt.RemoveUnwantedChunksUntil(currentPos, "MFBO");
+            adt.RemoveUnwantedChunksUntil(adtPos, "MFBO");
 
-            if (currentPos < adt.Size() - 4 && adt.ReadInt(currentPos) == ChunkedWowFile.MagicToInt("MFBO"))
+            if (adtPos < adt.Size() - 4 && adt.ReadInt(adtPos) == ChunkedWowFile.MagicToInt("MFBO"))
             {
-                adt.WriteInt(0x38, currentPos - 0x14);
-                currentPos += adt.ReadInt(currentPos + 0x4) + 0x8;
+                adt.WriteInt(0x38, adtPos - 0x14);
+                adtPos += adt.ReadInt(adtPos + 0x4) + 0x8;
             }
             else
             {
@@ -713,10 +817,9 @@ namespace MultiConverter.Lib.Converters
             }
         }
 
-
         private void RetrieveMTXF()
         {
-            adt.WriteInt(0x40, currentPos - 0x14);
+            adt.WriteInt(0x40, adtPos - 0x14);
 
             int posMTXF = 0, posMTXP = 0;
             int i = 0;
@@ -737,16 +840,16 @@ namespace MultiConverter.Lib.Converters
             if (posMTXF > 0)
             {
                 int size = tex.ReadInt(i + 0x4);
-                adt.AddEmptyBytes(currentPos, 0x8 + size);
-                adt.WriteInt(currentPos, ChunkedWowFile.MagicToInt("MTXF"));
-                adt.WriteInt(currentPos + 0x4, size);
-                currentPos += 0x8;
+                adt.AddEmptyBytes(adtPos, 0x8 + size);
+                adt.WriteInt(adtPos, ChunkedWowFile.MagicToInt("MTXF"));
+                adt.WriteInt(adtPos + 0x4, size);
+                adtPos += 0x8;
 
                 for (int k = posMTXF + 0x8; k < posMTXF + 0x8 + size; k += 0x4)
                 {
                     // only flag used in wotlk
-                    adt.WriteInt(currentPos, tex.Data[k] & 0x1);
-                    currentPos += 0x4;
+                    adt.WriteInt(adtPos, tex.Data[k] & 0x1);
+                    adtPos += 0x4;
                 }
             }
             else if (posMTXP > 0)
@@ -754,25 +857,35 @@ namespace MultiConverter.Lib.Converters
                 int size = tex.ReadInt(i + 0x4);
                 int mtxf_size = size / 4;
 
-                adt.AddEmptyBytes(currentPos, 0x8 + mtxf_size);
-                adt.WriteInt(currentPos, ChunkedWowFile.MagicToInt("MTXF"));
-                adt.WriteInt(currentPos + 0x4, mtxf_size);
-                currentPos += 0x8;
+                adt.AddEmptyBytes(adtPos, 0x8 + mtxf_size);
+                adt.WriteInt(adtPos, ChunkedWowFile.MagicToInt("MTXF"));
+                adt.WriteInt(adtPos + 0x4, mtxf_size);
+                adtPos += 0x8;
 
                 for (int k = posMTXP + 0x8; k < posMTXP + 0x8 + size; k += 0x10)
                 {
                     // only flag used in wotlk
-                    adt.WriteInt(currentPos, tex.Data[k] & 0x1);
-                    currentPos += 0x4;
+                    adt.WriteInt(adtPos, tex.Data[k] & 0x1);
+                    adtPos += 0x4;
                 }
             }
             else
             {
-                adt.AddEmptyBytes(currentPos, 0x8 + textureCount * 4);
-                adt.WriteInt(currentPos, ChunkedWowFile.MagicToInt("MTXF"));
-                adt.WriteInt(currentPos + 0x4, textureCount * 4);
-                currentPos += 0x8 + textureCount * 4;
+                adt.AddEmptyBytes(adtPos, 0x8 + textureCount * 4);
+                adt.WriteInt(adtPos, ChunkedWowFile.MagicToInt("MTXF"));
+                adt.WriteInt(adtPos + 0x4, textureCount * 4);
+                adtPos += 0x8 + textureCount * 4;
             }
+        }
+
+        private uint CalculateChunkSize(IDictionary<uint, string> filenames)
+        {
+            var finalSize = 0u;
+
+            foreach (var filename in filenames)
+                finalSize += (uint)filename.Value.Length;
+
+            return finalSize;
         }
 
         public void Save()
@@ -786,5 +899,28 @@ namespace MultiConverter.Lib.Converters
             Utils.DeleteFile(file.Replace(".adt", "_occ.wdt"));
             Utils.DeleteFile(file.Replace(".adt", "_lgt.wdt"));
         }
+    }
+
+    public struct MDDF
+    {
+        public uint NameId;
+        public uint UniqueId;
+        public C3Vector Position;
+        public C3Vector Rotation;
+        public ushort Scale;
+        public ushort Flags;
+    }
+
+    public struct MODF
+    {
+        public uint NameId;
+        public uint UniqueId;
+        public C3Vector Position;
+        public C3Vector Rotation;
+        public CAaBox Extents;
+        public ushort Flags;
+        public ushort DoodadSet;
+        public ushort NameSet;
+        public ushort Scale;
     }
 }

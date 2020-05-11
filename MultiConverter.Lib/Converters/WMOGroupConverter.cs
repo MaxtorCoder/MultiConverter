@@ -1,6 +1,5 @@
 ﻿using MultiConverter.Lib.Converters.Base;
 using System;
-using System.IO;
 
 namespace MultiConverter.Lib.Converters
 {
@@ -22,7 +21,7 @@ namespace MultiConverter.Lib.Converters
         MLIQ = 1296845137
     };
 
-    public class WMOGroupConverter : ChunkedWowFile, IConverter
+    public class WMOGroupConverter : ChunkedWowFile
     {
         private int posMOVT = 0;
         private bool wod;

@@ -1,7 +1,6 @@
 ﻿using MultiConverter.Lib.Converters.Base;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace MultiConverter.Lib.Converters
 {

@@ -1,10 +1,8 @@
 ﻿using MultiConverter.Lib.Converters.Base;
-using System;
-using System.IO;
 
 namespace MultiConverter.Lib.Converters
 {
-    public class WDTConverter : ChunkedWowFile, IConverter
+    public class WDTConverter : ChunkedWowFile
     {
         public WDTConverter(string file) : base(file)
         {

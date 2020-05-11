@@ -1,13 +1,8 @@
 ﻿using MultiConverter.Lib.Converters.Base;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MultiConverter.Lib.Converters
 {
-    public class AnimConverter : ChunkedWowFile, IConverter
+    public class AnimConverter : ChunkedWowFile
     {
         public AnimConverter(string file) : base(file)
         {

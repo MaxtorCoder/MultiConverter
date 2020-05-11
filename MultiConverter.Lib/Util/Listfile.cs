@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MultiConverter.Lib
 {
@@ -56,7 +53,7 @@ namespace MultiConverter.Lib
             }
         }
 
-        public static string LookupFilename(uint id, string extension, string modelname, string downloadExtension = "blp")
+        public static string LookupFilename(uint id, string extension, string downloadExtension = "blp")
         {
             // Lookup the Id in the listfile, if it does not exist
             // download and place in blp/<extension>/<modelname>/<blpname>
@@ -71,14 +68,12 @@ namespace MultiConverter.Lib
                 {
                     var newFilename = $"{id}.{downloadExtension}";
                     var newExtension = extension.Remove(0, 1);
-                    var pathName = $"Unk/{downloadExtension}/{newExtension}/{modelname}/{newFilename}";
+                    var pathName = $"Unk/{downloadExtension}/{newExtension}/{newFilename}";
 
                     if (!Directory.Exists($"Unk/{downloadExtension}"))
                         Directory.CreateDirectory($"Unk/{downloadExtension}");
                     if (!Directory.Exists($"Unk/{downloadExtension}/{newExtension}"))
                         Directory.CreateDirectory($"Unk/{downloadExtension}/{newExtension}");
-                    if (!Directory.Exists($"Unk/{downloadExtension}/{newExtension}/{modelname}"))
-                        Directory.CreateDirectory($"Unk/{downloadExtension}/{newExtension}/{modelname}");
 
                     if (File.Exists(pathName))
                     {
