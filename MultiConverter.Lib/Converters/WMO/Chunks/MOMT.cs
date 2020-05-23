@@ -16,19 +16,20 @@ namespace MultiConverter.Lib.Converters.WMO.Chunks
         /// <summary>
         /// List of all filenames
         /// </summary>
-        public Dictionary<string, int> Filenames = new Dictionary<string, int>();
+        public Dictionary<string, uint> Filenames = new Dictionary<string, uint>();
 
         /// <summary>
         /// List of <see cref="MOMTEntry"/>
         /// </summary>
         public List<MOMTEntry> MOMTs = new List<MOMTEntry>();
 
+        private uint textureOffset = 0;
+
         public void Read(byte[] inData)
         {
             using (var stream = new MemoryStream(inData))
             using (var reader = new BinaryReader(stream))
             {
-                var textureOffset = 0;
                 var momtSize = inData.Length / 64;
 
                 for (var i = 0; i < momtSize; ++i)
@@ -49,43 +50,51 @@ namespace MultiConverter.Lib.Converters.WMO.Chunks
                         Flags2          = reader.ReadUInt32()
                     };
 
+                    momt.Flags1 &= 0xFF;
+
                     for (var j = 0; j < 4; ++j)
                         momt.RunTimeData[j] = reader.ReadUInt32();
 
-                    if (momt.TextureId1 != 0)
+                    var filename = AddFilename(momt.TextureId1);
+                    if (filename != string.Empty)
                     {
-                        var filename = Listfile.LookupFilename(momt.TextureId1, ".wmo").Replace("/", "\\") + "\0";
-                        if (!Filenames.ContainsKey(filename))
-                        {
-                            Filenames.Add(filename, textureOffset);
-                            textureOffset += filename.Length;
-                        }
-
-                        momt.TextureId1 = (uint)Filenames[filename];
+                        var idx = Filenames[filename];
+                        momt.TextureId1 = idx;
                     }
+                    else
+                        momt.TextureId1 = 0;
 
-                    if (momt.TextureId2 != 0)
+                    filename = AddFilename(momt.TextureId2);
+                    if (filename != string.Empty)
                     {
-                        var filename = Listfile.LookupFilename(momt.TextureId2, ".wmo").Replace("/", "\\") + "\0";
-                        if (!Filenames.ContainsKey(filename))
-                        {
-                            Filenames.Add(filename, textureOffset);
-                            textureOffset += filename.Length;
-                        }
-
-                        momt.TextureId2 = (uint)Filenames[filename];
+                        var idx = Filenames[filename];
+                        momt.TextureId2 = idx;
                     }
+                    else
+                        momt.TextureId2 = 0;
 
-                    if (momt.TextureId3 != 0)
+                    filename = AddFilename(momt.TextureId3);
+                    if (filename != string.Empty)
                     {
-                        var filename = Listfile.LookupFilename(momt.TextureId3, ".wmo").Replace("/", "\\") + "\0";
-                        if (!Filenames.ContainsKey(filename))
-                        {
-                            Filenames.Add(filename, textureOffset);
-                            textureOffset += filename.Length;
-                        }
+                        var idx = Filenames[filename];
+                        momt.TextureId3 = idx;
+                    }
+                    else
+                        momt.TextureId3 = 0;
 
-                        momt.TextureId3 = (uint)Filenames[filename];
+                    switch (momt.ShaderType)
+                    {
+                        case 13:
+                        case 14:
+                        case 15:
+                        case 16:
+                        case 7:  momt.ShaderType = 6; break;
+                        case 9:  momt.ShaderType = 0; break;
+                        case 12: momt.ShaderType = 5; break;
+                        default:
+                            if (momt.ShaderType >= 13)
+                                momt.ShaderType = 4;
+                            break;
                     }
 
                     MOMTs.Add(momt);
@@ -122,6 +131,24 @@ namespace MultiConverter.Lib.Converters.WMO.Chunks
 
                 return stream.ToArray();
             }
+        }
+
+        private string AddFilename(uint fdid)
+        {
+            if (fdid != 0)
+            {
+                var textureFilename = Listfile.LookupFilename(fdid, ".wmo").Replace('/', '\\') + "\0";
+
+                if (!Filenames.ContainsKey(textureFilename))
+                {
+                    Filenames.Add(textureFilename, textureOffset);
+                    textureOffset += (uint)textureFilename.Length;
+                }
+
+                return textureFilename;
+            }
+
+            return string.Empty;
         }
     }
 }

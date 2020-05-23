@@ -50,7 +50,6 @@ namespace MultiConverter.Lib.Converters
             pos = 0x58;
 
             // Mandatory chunks
-
             pos = CheckChunk(pos, GroupChunk.MOPY);
             pos = CheckChunk(pos, GroupChunk.MOVI); posMOVT = pos;
             pos = CheckChunk(pos, GroupChunk.MOVT);

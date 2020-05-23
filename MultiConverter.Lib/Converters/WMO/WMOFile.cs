@@ -13,6 +13,9 @@ namespace MultiConverter.Lib.Converters.WMO
 
         public void Read(byte[] data)
         {
+            // Clear chunks to prevent double data.
+            Chunks.Clear();
+
             using (var stream = new MemoryStream(data))
             using (var reader = new BinaryReader(stream))
             {
@@ -55,6 +58,8 @@ namespace MultiConverter.Lib.Converters.WMO
 
                 // Add mandatory chunks.
                 Chunks.Add(new MOSB());
+                Chunks.Add(new MOVV());
+                Chunks.Add(new MOVB());
 
                 // Close the streams so they can be written.
                 reader.Close();
