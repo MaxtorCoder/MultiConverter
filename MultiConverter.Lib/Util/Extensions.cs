@@ -1,6 +1,7 @@
 ﻿using MultiConverter.Lib.Common;
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace MultiConverter.Lib.Util
@@ -67,6 +68,13 @@ namespace MultiConverter.Lib.Util
         {
             writer.WriteC3Vector(plane.Normal);
             writer.Write(plane.Distance);
+        }
+
+        public static T Read<T>(this BinaryReader reader) where T : struct
+        {
+            byte[] result = reader.ReadBytes(Unsafe.SizeOf<T>());
+
+            return Unsafe.ReadUnaligned<T>(ref result[0]);
         }
 
         public static string ReadNullTerminatedString(this BinaryReader reader)

@@ -1,0 +1,28 @@
+﻿<Window x:Class="MultiConverter.WPF.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" ResizeMode="NoResize"
+        Title="Settings" MinHeight="200" MinWidth="700" MaxHeight="200" MaxWidth="700">
+    <Grid>
+        <Canvas>
+            <Label Content="Casc Storage Type: " Canvas.Left="10" Canvas.Top="10" Width="114"/>
+            <ComboBox x:Name="storageType" Canvas.Left="141" Canvas.Top="12" Width="397" SelectionChanged="StorageType_SelectionChanged">
+                <ComboBoxItem Content="Online"/>
+                <ComboBoxItem Content="Local"/>
+            </ComboBox>
+
+            <Label Content="Local Storage Path: " Canvas.Left="10" Canvas.Top="41" />
+            <TextBox x:Name="storagePath" Canvas.Left="141" Canvas.Top="41" TextWrapping="Wrap" Width="397" Height="25" IsEnabled="false" VerticalContentAlignment="Center" FlowDirection="LeftToRight" />
+            <Button x:Name="openStorage" Content="Open Local Storage" Canvas.Left="544" Canvas.Top="41" Height="25" Width="130" Click="OpenStorage_Click" IsEnabled="false" />
+            <ComboBox x:Name="localBranch" Canvas.Left="141" Canvas.Top="71" Width="397" IsEnabled="false" />
+
+            <Label Content="Online Branch: " Canvas.Left="10" Canvas.Top="96" Width="114" IsEnabled="false" />
+            <ComboBox x:Name="onlineBranch" Canvas.Left="141" Canvas.Top="98" Width="397" IsEnabled="false" />
+
+            <Button x:Name="cancelBtn" Content="Cancel" Canvas.Left="591" Canvas.Top="131" Width="83"/>
+            <Button x:Name="acceptBtn" Content="OK" Canvas.Left="503" Canvas.Top="131" Width="83" Click="Accept_Click"/>
+        </Canvas>
+    </Grid>
+</Window>

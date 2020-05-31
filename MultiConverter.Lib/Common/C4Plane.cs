@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MultiConverter.Lib.Common
+﻿namespace MultiConverter.Lib.Common
 {
     public struct C4Plane
     {

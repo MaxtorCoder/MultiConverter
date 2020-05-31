@@ -1,7 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net4.8</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Converters\**" />
+    <EmbeddedResource Remove="Converters\**" />
+    <None Remove="Converters\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CascLib\CascLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="OpenTK">
+      <HintPath>..\Libs\OpenTK.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 
 </Project>

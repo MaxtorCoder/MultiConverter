@@ -1,14 +1,12 @@
-﻿using Microsoft.Win32;
-using MultiConverter.Lib;
-using MultiConverter.Lib.Converters;
-using MultiConverter.Lib.Converters.Base;
-using MultiConverter.Lib.Converters.WMO;
+﻿using MultiConverter.Lib;
+using MultiConverter.Lib.Readers;
+using MultiConverter.Lib.Readers.Base;
+using MultiConverter.Lib.Readers.WMO;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
@@ -29,19 +27,6 @@ namespace MultiConverter.GUI
 
             InitializeComponent();
             lb.HorizontalScrollbar = true;
-
-            var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\MultiConverter", true);
-            if (key == null)
-                key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\MultiConverter");
-
-            if (!key.GetValueNames().Contains("firstTime"))
-                key.SetValue("firstTime", false);
-
-            if (!bool.Parse(key.GetValue("firstTime").ToString()))
-            {
-                MessageBox.Show("First time converting might take a while since it is downloading + loading the listfile..");
-                key.SetValue("firstTime", true);
-            }
         }
 
         private void Clear() => lb.Items.Clear();
@@ -112,8 +97,11 @@ namespace MultiConverter.GUI
                     // else if (filename.EndsWith("anim"))
                     //     converter = new AnimConverter(filename);
 
-                    converter.Read(File.ReadAllBytes(filename));
-                    converter.Write(filename);
+                    using (var stream = new MemoryStream(File.ReadAllBytes(filename)))
+                    {
+                        converter.Read(stream);
+                        converter.Write(filename);
+                    }
 
                     if (++progress == PROGRESS)
                     {
