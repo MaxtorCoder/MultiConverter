@@ -21,13 +21,13 @@
             </Menu>
             <StackPanel></StackPanel>
             <Canvas Grid.Column="0">
-                <TreeView x:Name="modelListView" Height="455" Width="380"
+                <TreeView x:Name="modelListView" Height="523" Width="380"
                       TreeViewItem.Expanded="modelListView_Expanded" TreeView.SelectedItemChanged="modelListView_SelectedItemChanged" 
                       HorizontalAlignment="Left" VerticalAlignment="Top" VerticalContentAlignment="Top" Canvas.Left="10" Canvas.Top="10"/>
-                <Button x:Name="enqueueModel" Height="25" Width="150" Content="Add Model" Canvas.Left="240" Canvas.Top="470"/>
-                <TreeView x:Name="enqueuedModels" Width="380" Height="286" Canvas.Left="10" Canvas.Top="500" />
-                <Button x:Name="convertModel" Height="25" Width="150" Content="Convert Files" Canvas.Left="240" Canvas.Top="791"/>
-                <StatusBar Height="30" Canvas.Top="821">
+                <Button x:Name="enqueueModel" Height="25" Width="150" Content="Add Model" Canvas.Left="240" Canvas.Top="538" Click="enqueueModel_Click"/>
+                <TreeView x:Name="enqueuedModels" Width="380" Height="203" Canvas.Left="10" Canvas.Top="568" />
+                <Button x:Name="convertModel" Height="25" Width="150" Content="Convert Files" Canvas.Left="240" Canvas.Top="776" Click="convertModel_Click"/>
+                <StatusBar Height="30" Canvas.Bottom="0">
                     <DockPanel LastChildFill="False" Width="394">
                         <Label x:Name="statusText" DockPanel.Dock="Left" Content="" VerticalAlignment="Center" FontSize="11" />
                         <ProgressBar x:Name="progressBar" DockPanel.Dock="Right" Width="165" Height="20" Margin="0,0,5,0"/>

@@ -11,16 +11,18 @@ namespace MultiConverter.Lib.Readers.WMO
 {
     public class WMOFile : IConverter
     {
+        public uint WMOFileDataId = 0u;
         public static CASCHandler CascHandler;
         public static Dictionary<string, ChunkBase> Chunks = new Dictionary<string, ChunkBase>();
 
         public void ReadWMO(CASCHandler handler, string filename)
         {
             CascHandler = handler;
-            if (Listfile.TryGetFileDataId(filename, out var filedataid) && handler.FileExists((int)filedataid))
+            if (Listfile.TryGetFileDataId(filename, out var fileDataId) && handler.FileExists((int)fileDataId))
             {
-                using (var stream = handler.OpenFile((int)filedataid))
+                using (var stream = handler.OpenFile((int)fileDataId))
                 {
+                    WMOFileDataId = fileDataId;
                     Read(stream);
                 }
             }

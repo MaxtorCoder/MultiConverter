@@ -20,6 +20,8 @@ namespace MultiConverter.WPF.OpenGL
 {
     public class ModelPreview
     {
+        public static Dictionary<uint, List<uint>> FilesXChildren = new Dictionary<uint, List<uint>>();
+
         private GLControl glControl;
         private System.Windows.Controls.Image blpView;
 

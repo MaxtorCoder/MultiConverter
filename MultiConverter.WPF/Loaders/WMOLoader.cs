@@ -4,11 +4,13 @@ using MultiConverter.Lib.Readers.WMO.Chunks.GroupChunks;
 using MultiConverter.Lib.RenderingObject;
 using MultiConverter.Lib.RenderingObject.Structures;
 using MultiConverter.WPF.Util;
+using MultiConverter.WPF.OpenGL;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MultiConverter.Lib;
 
 namespace MultiConverter.WPF.Loaders
 {
@@ -21,6 +23,9 @@ namespace MultiConverter.WPF.Loaders
             var wmoFile = new WMOFile();
             wmoFile.ReadWMO(CASC.CascHandler, filename);
 
+            // Add the main filedataid
+            ModelPreview.FilesXChildren.Add(wmoFile.WMOFileDataId, new List<uint>());
+
             var momt = wmoFile.GetChunk("MOMT") as MOMT;
             var mohd = wmoFile.GetChunk("MOHD") as MOHD;
             GroupFiles = new List<WMOGroupFile>((int)mohd.MOHDEntry.GroupCount);
@@ -32,6 +37,10 @@ namespace MultiConverter.WPF.Loaders
                 {
                     if (CASC.CascHandler.FileExists((int)gfid.GroupFileDataIds[i]))
                     {
+                        // Add children files
+                        if (CASC.CascHandler.FileExists(gfid.GroupFileDataIds[i]))
+                            ModelPreview.FilesXChildren[wmoFile.WMOFileDataId].Add(gfid.GroupFileDataIds[i]);
+
                         using (var stream = CASC.CascHandler.OpenFile((int)gfid.GroupFileDataIds[i]))
                         {
                             var groupFile = new WMOGroupFile();
@@ -65,6 +74,15 @@ namespace MultiConverter.WPF.Loaders
                 material.TextureId1 = BLPLoader.LoadTexture(momt.MOMTs[i].TextureId1);
                 material.TextureId2 = BLPLoader.LoadTexture(momt.MOMTs[i].TextureId2);
                 material.TextureId3 = BLPLoader.LoadTexture(momt.MOMTs[i].TextureId3);
+
+                if (material.Texture1 != 0 && CASC.CascHandler.FileExists((int)material.Texture1))
+                    ModelPreview.FilesXChildren[wmoFile.WMOFileDataId].Add(material.Texture1);
+
+                if (material.Texture2 != 0 && CASC.CascHandler.FileExists((int)material.Texture2))
+                    ModelPreview.FilesXChildren[wmoFile.WMOFileDataId].Add(material.Texture2);
+
+                if (material.Texture3 != 0 && CASC.CascHandler.FileExists((int)material.Texture3))
+                    ModelPreview.FilesXChildren[wmoFile.WMOFileDataId].Add(material.Texture3);
 
                 WorldModel.Materials.Add(material);
             }
