@@ -3,7 +3,7 @@
 Originally written by [Adspartan](https://github.com/Adspartan "Adspartan's Github")
 
 ## Support
-For support please go to the Discord linked above and go to the #support channel. 😄
+For support please go to the Discord linked at the bottom, and go to the #support channel. 😄
 
 ## How To
 To use it just open it then drag and drop the files you want to convert (or a folder containing some, subfolder included) and click on "Fix", the files will be overwritten and it will delete the files that are unused on wotlk. 
@@ -16,7 +16,7 @@ If the .skin files are in the same folder they will be converted too.
 | Format   | Cata      | MOP       | WOD       | Legion    | BFA (Above 26629)|
 |:--------:|:---------:|:---------:|:---------:|:---------:|:----------------:|
 |    M2    | ✔️        | ✔️        | ✔️        | ✔️        | ✔️               |
-|    WMO   | ✔️        | ✔️        | ✔️        | ✔️        | ❌               |
+|    WMO   | ✔️        | ✔️        | ✔️        | ✔️        | ✔️               |
 |    ADT   | ✔️        | ✔️        | ✔️        | ✔️        | ❌               |
 |    WDT   | ✔️        | ✔️        | ✔️        | ✔️        | ❌               |
 
@@ -24,7 +24,6 @@ If the .skin files are in the same folder they will be converted too.
 * Animation particles
 * Set WMOs liquid types that correspond when the ID is too high
 * Set fel liquid to green lava on adt for a better / more accurate look
-* WMO BFA support
 * ADT BFA support
 * WDT BFA support
 
