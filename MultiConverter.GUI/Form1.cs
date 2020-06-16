@@ -29,19 +29,6 @@ namespace MultiConverter.GUI
 
             InitializeComponent();
             lb.HorizontalScrollbar = true;
-
-            var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\MultiConverter", true);
-            if (key == null)
-                key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\MultiConverter");
-
-            if (!key.GetValueNames().Contains("firstTime"))
-                key.SetValue("firstTime", false);
-
-            if (!bool.Parse(key.GetValue("firstTime").ToString()))
-            {
-                MessageBox.Show("First time converting might take a while since it is downloading + loading the listfile..");
-                key.SetValue("firstTime", true);
-            }
         }
 
         private void Clear() => lb.Items.Clear();

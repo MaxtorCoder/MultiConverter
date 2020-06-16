@@ -37,6 +37,12 @@ namespace MultiConverter.Lib.Converters.WMO.Chunks
 
                 MOHDEntry.FlagLod       = reader.ReadUInt16();
                 MOHDEntry.LodCount      = reader.ReadUInt16();
+
+                if (WMOFile.DisableDoodads)
+                { 
+                    MOHDEntry.DoodadCount   = 0;
+                    MOHDEntry.ModelCount    = 0;
+                }
             }
         }
 

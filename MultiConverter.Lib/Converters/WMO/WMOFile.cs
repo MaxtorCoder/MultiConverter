@@ -1,4 +1,4 @@
-﻿using MultiConverter.Lib.Converters.Base;
+using MultiConverter.Lib.Converters.Base;
 using MultiConverter.Lib.Converters.WMO.Chunks;
 using System;
 using System.Collections.Generic;
@@ -10,6 +10,7 @@ namespace MultiConverter.Lib.Converters.WMO
     public class WMOFile : IConverter
     {
         public static List<IChunk> Chunks = new List<IChunk>();
+        public static bool DisableDoodads = true;
 
         public void Read(byte[] data)
         {

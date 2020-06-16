@@ -26,13 +26,18 @@ namespace MultiConverter.Lib.Converters.WMO.Chunks
                 var modsSize = inData.Length / 32;
                 for (var i = 0; i < modsSize; ++i)
                 {
-                    MODSs.Add(new MODSEntry
+                    var mods = new MODSEntry
                     {
                         SetName = new string(reader.ReadChars(20)),
                         FirstDoodadInSet = reader.ReadUInt32(),
                         DoodadInSetCount = reader.ReadUInt32(),
                         Padding = reader.ReadUInt32()
-                    });
+                    };
+
+                    if (WMOFile.DisableDoodads)
+                        mods.DoodadInSetCount = 0;
+
+                    MODSs.Add(mods);
                 }
             }
         }

@@ -34,7 +34,10 @@ namespace MultiConverter.Lib.Converters.WMO.Chunks
                 }
             }
 
-            WMOFile.Chunks.Add(new MODN { DoodadFilenames = DoodadNames.Values.ToList() });
+            if (WMOFile.DisableDoodads)
+                WMOFile.Chunks.Add(new MODN());
+            else
+                WMOFile.Chunks.Add(new MODN { DoodadFilenames = DoodadNames.Values.ToList() });
         }
 
         public byte[] Write() => new byte[0];

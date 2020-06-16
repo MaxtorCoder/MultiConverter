@@ -20,6 +20,13 @@ namespace MultiConverter.Lib.Converters.WMO.Chunks
         /// </summary>
         public List<MODDEntry> MODDs = new List<MODDEntry>();
 
+        /// <summary>
+        /// List of all filenames
+        /// </summary>
+        public Dictionary<string, uint> Filenames = new Dictionary<string, uint>();
+
+        private uint doodadOffset = 0;
+
         public void Read(byte[] inData)
         {
             using (var stream = new MemoryStream(inData))
@@ -34,7 +41,7 @@ namespace MultiConverter.Lib.Converters.WMO.Chunks
 
                     var modd = new MODDEntry
                     {
-                        NameIndex   = BitConverter.ToUInt32(finalNameBytes, 0),
+                        NameIndex   = BitConverter.ToInt32(finalNameBytes, 0),
                         Flags       = reader.ReadByte(),
                         Position    = reader.ReadC3Vector(),
                         Rotation    = reader.ReadC3Vector(),
@@ -43,8 +50,17 @@ namespace MultiConverter.Lib.Converters.WMO.Chunks
                         Color       = reader.ReadCArgb()
                     };
 
-                    var fileid = MODI.DoodadFileIds[modd.NameIndex];
-                    modd.NameIndex = (uint)MODI.DoodadNames.Keys.ToList().IndexOf(fileid);
+                    var filename = AddFilename(MODI.DoodadFileIds[modd.NameIndex]);
+                    if (filename != string.Empty)
+                    {
+                        var idx = Filenames[filename];
+                        nameOffsetBytes = BitConverter.GetBytes(idx);
+
+                        Buffer.BlockCopy(nameOffsetBytes, 0, finalNameBytes, 0, 3);
+                        modd.NameIndex = BitConverter.ToInt32(finalNameBytes, 0);
+                    }
+                    else
+                        modd.NameIndex = -1;
 
                     MODDs.Add(modd);
                 }
@@ -56,23 +72,45 @@ namespace MultiConverter.Lib.Converters.WMO.Chunks
             using (var stream = new MemoryStream())
             using (var writer = new BinaryWriter(stream))
             {
-                foreach (var modd in MODDs)
+                // Disable doodads.
+                if (!WMOFile.DisableDoodads)
                 {
-                    var nameOffsetBytes = BitConverter.GetBytes(modd.NameIndex);
-                    var finalNameOffsetBytes = new byte[3];
-                    Buffer.BlockCopy(nameOffsetBytes, 0, finalNameOffsetBytes, 0, 3);
-
-                    writer.Write(finalNameOffsetBytes);
-                    writer.Write(modd.Flags);
-                    writer.WriteC3Vector(modd.Position);
-                    writer.WriteC3Vector(modd.Rotation);
-                    writer.Write(modd.RotationW);
-                    writer.Write(modd.Scale);
-                    writer.WriteCArgb(modd.Color);
+                    foreach (var modd in MODDs)
+                    {
+                        var nameOffsetBytes = BitConverter.GetBytes(modd.NameIndex);
+                        var finalNameOffsetBytes = new byte[3];
+                        Buffer.BlockCopy(nameOffsetBytes, 0, finalNameOffsetBytes, 0, 3);
+                    
+                        writer.Write(finalNameOffsetBytes);
+                        writer.Write(modd.Flags);
+                        writer.WriteC3Vector(modd.Position);
+                        writer.WriteC3Vector(modd.Rotation);
+                        writer.Write(modd.RotationW);
+                        writer.Write(modd.Scale);
+                        writer.WriteCArgb(modd.Color);
+                    }
                 }
 
                 return stream.ToArray();
             }
+        }
+
+        private string AddFilename(uint fdid)
+        {
+            if (fdid != 0)
+            {
+                var textureFilename = Listfile.LookupFilename(fdid, ".wmo").Replace('/', '\\') + "\0";
+
+                if (!Filenames.ContainsKey(textureFilename))
+                {
+                    Filenames.Add(textureFilename, doodadOffset);
+                    doodadOffset += (uint)textureFilename.Length;
+                }
+
+                return textureFilename;
+            }
+
+            return string.Empty;
         }
     }
 }

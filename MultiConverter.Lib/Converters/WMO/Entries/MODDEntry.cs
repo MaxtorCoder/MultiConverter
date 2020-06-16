@@ -4,7 +4,7 @@ namespace MultiConverter.Lib.Converters.WMO.Entries
 {
     public class MODDEntry
     {
-        public uint NameIndex { get; set; }
+        public int NameIndex { get; set; }
         public byte Flags { get; set; }
         public C3Vector Position { get; set; }
         public C3Vector Rotation { get; set; }
