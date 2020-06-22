@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>3.6.0</Version>
+    <Version>3.6.1</Version>
     <PackageId>WoW - MultiConverter</PackageId>
     <Authors>MaxtorCoder &amp; Adspartan</Authors>
     <Company>The Fuckporting Company</Company>

@@ -12,7 +12,8 @@ namespace MultiConverter.Lib
                 || s.EndsWith(".anim", StringComparison.OrdinalIgnoreCase)
                 || s.EndsWith(".wmo", StringComparison.OrdinalIgnoreCase)
                 || s.EndsWith(".adt", StringComparison.OrdinalIgnoreCase)
-                || s.EndsWith(".wdt", StringComparison.OrdinalIgnoreCase);
+                || s.EndsWith(".wdt", StringComparison.OrdinalIgnoreCase)
+                || s.EndsWith(".skin", StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool IsChunk(ref byte[] buff, int pos, int magic)

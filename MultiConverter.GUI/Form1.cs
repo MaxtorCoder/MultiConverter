@@ -95,6 +95,8 @@ namespace MultiConverter.GUI
 
                         continue;
                     }
+                    else if (filename.EndsWith(".skin"))
+                        continue;
                     if (filename.EndsWith("wmo"))
                         converter = new WMOFile();
                     // else if (filename.EndsWith("anim"))

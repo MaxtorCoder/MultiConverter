@@ -18,13 +18,14 @@ namespace MultiConverter.Lib.Converters
         private int particleCount;
         private uint particleOffset, texturesSize;
         private string modelName;
-        private int animOffset, animCount, animLookupOffset, animLookupCount, textureCount, textureOffset, dataSize;
+        private int animOffset, animCount, animLookupOffset, animLookupCount, textureOffset, dataSize;
 
         private HashSet<uint> shiftedOfs                = new HashSet<uint>();
         private Dictionary<int, byte[]> multitextInfo   = new Dictionary<int, byte[]>();
         private List<SkinConverter> skins               = new List<SkinConverter>();
 
         private Dictionary<Texture, int> Textures       = new Dictionary<Texture, int>();
+        private List<string> SkinFiles                  = new List<string>();
 
         public M2Converter(string m2, bool fix_helm) : base(m2)
         {
@@ -61,13 +62,16 @@ namespace MultiConverter.Lib.Converters
 
                                 // Skip to M2Array<Texture>.
                                 reader.ReadBytes(0x50);
-                                textureCount                = reader.ReadInt32();
-                                textureOffset               = reader.ReadInt32();
+                                reader.ReadInt32();
+                                textureOffset = reader.ReadInt32();
 
                                 reader.BaseStream.Position = offset + size;
                                 break;
                             case "TXID":
                                 ReadTXID(reader, size);
+                                break;
+                            case "SFID":
+                                ReadSFID(reader, size);
                                 break;
                             default:
                                 reader.BaseStream.Position += size;
@@ -126,6 +130,19 @@ namespace MultiConverter.Lib.Converters
             }
         }
 
+        private void ReadSFID(BinaryReader reader, uint size)
+        {
+            for (var i = 0u; i < size / 4u; ++i)
+            {
+                var skinFileId = reader.ReadUInt32();
+                var filename = Listfile.LookupFilename(skinFileId, ".m2").Replace('/', '\\');
+
+                filename = System.IO.Path.GetFileName(filename);
+
+                SkinFiles.Add(filename);
+            }
+        }
+
         public bool Fix()
         {
             //           file too small
@@ -142,76 +159,79 @@ namespace MultiConverter.Lib.Converters
             FixSkins();
 
             // Nothing to do
-            if (particleCount > 0)
-            {
-                int particleEnd = (int)particleOffset + (476 + 16) * particleCount;
-
-                if (NeedParticleFix())
-                {
-                    AddEmptyBytes(particleEnd, 16 * particleCount);
-                    for (int i = particleCount; i > 0; i--)
-                    {
-                        int pos = (i * 476) + (i - 1) * 16 + (int)particleOffset;
-                        multitextInfo[i - 1] = new byte[16];
-                        BlockCopy(pos, multitextInfo[i - 1], 0, 16);
-                        RemoveBytes(pos, 16);
-                    }
-                }
-
-                particleEnd = (int)particleOffset + 476 * particleCount;
-
-                for (int i = 0; i < particleCount; i++)
-                {
-                    int pos = i * 476 + (int)particleOffset + 0x28;
-                    char c = ReadChar(pos);
-
-                    int flagsOfs = (int)(i * 476 + particleOffset + 4);
-                    uint flags = ReadUInt(flagsOfs);
-                    if (c > 4)
-                    {
-                        Data[pos] = 4;
-                        //FixEmitterSpeed(i);
-                    }
-
-                    if ((flags & 0x800000) != 0)
-                    {
-                        FixGravity(i);
-                    }
-
-
-                    pos = i * 476 + (int)particleOffset + 22;
-                    if ((flags & 0x10000000) != 0)
-                    {
-                        short val = ReadShort(pos);
-                        short text0 = (short)(val & 0x1F);
-                        short text1 = (short)((val & 0x3E0) >> 5);
-                        short text2 = (short)((val & 0x7C00) >> 10);
-
-                        WriteShort(pos, text0);
-                    }
-
-                    // 0x4000000 	do not throttle emission rate based on distance  => cause for high value emission rate ?
-                    if ((flags & 0x4000000) != 0)
-                    {
-                        //FixEmitterSpeed(i);
-                    }
-                }
-
-                for (int i = particleCount - 1; i >= 0; i--)
-                {
-                    if (BitConverter.ToUInt16(multitextInfo[i], 2) == 0xFF)
-                    {
-                        particleCount--;
-                    }
-                    else // particles added are at the end
-                    {
-                        break;
-                    }
-                }
-
-                WriteInt(0x128, particleCount);
-
-            }
+            WriteInt(0x128, 0); // Particle Size
+            WriteInt(0x12C, 0); // Particle Offset
+            #region Particle Shit
+            // if (particleCount > 0)
+            // {
+            //     int particleEnd = (int)particleOffset + (476 + 16) * particleCount;
+            // 
+            //     if (NeedParticleFix())
+            //     {
+            //         AddEmptyBytes(particleEnd, 16 * particleCount);
+            //         for (int i = particleCount; i > 0; i--)
+            //         {
+            //             int pos = (i * 476) + (i - 1) * 16 + (int)particleOffset;
+            //             multitextInfo[i - 1] = new byte[16];
+            //             BlockCopy(pos, multitextInfo[i - 1], 0, 16);
+            //             RemoveBytes(pos, 16);
+            //         }
+            //     }
+            // 
+            //     particleEnd = (int)particleOffset + 476 * particleCount;
+            // 
+            //     for (int i = 0; i < particleCount; i++)
+            //     {
+            //         int pos = i * 476 + (int)particleOffset + 0x28;
+            //         char c = ReadChar(pos);
+            // 
+            //         int flagsOfs = (int)(i * 476 + particleOffset + 4);
+            //         uint flags = ReadUInt(flagsOfs);
+            //         if (c > 4)
+            //         {
+            //             Data[pos] = 4;
+            //             //FixEmitterSpeed(i);
+            //         }
+            // 
+            //         if ((flags & 0x800000) != 0)
+            //         {
+            //             FixGravity(i);
+            //         }
+            // 
+            // 
+            //         pos = i * 476 + (int)particleOffset + 22;
+            //         if ((flags & 0x10000000) != 0)
+            //         {
+            //             short val = ReadShort(pos);
+            //             short text0 = (short)(val & 0x1F);
+            //             short text1 = (short)((val & 0x3E0) >> 5);
+            //             short text2 = (short)((val & 0x7C00) >> 10);
+            // 
+            //             WriteShort(pos, text0);
+            //         }
+            // 
+            //         // 0x4000000 	do not throttle emission rate based on distance  => cause for high value emission rate ?
+            //         if ((flags & 0x4000000) != 0)
+            //         {
+            //             //FixEmitterSpeed(i);
+            //         }
+            //     }
+            // 
+            //     for (int i = particleCount - 1; i >= 0; i--)
+            //     {
+            //         if (BitConverter.ToUInt16(multitextInfo[i], 2) == 0xFF)
+            //         {
+            //             particleCount--;
+            //         }
+            //         else // particles added are at the end
+            //         {
+            //             break;
+            //         }
+            //     }
+            // 
+            //     WriteInt(0x128, particleCount);
+            // }
+            #endregion
 
             // update version
             WriteUInt(0x4, 264);
@@ -509,75 +529,48 @@ namespace MultiConverter.Lib.Converters
             }
         }
 
-        /// <summary>
-        /// Get the id
-        /// </summary>
-        /// <returns></returns>
-        private Dictionary<ushort, ushort> GetTransparencyLookupTargetType()
-        {
-            Dictionary<ushort, ushort> dico = new Dictionary<ushort, ushort>();
-
-            int ofsTrans = ReadInt(0x5C);
-            int ofsTransLookup = ReadInt(0x94);
-            int nTransLookup = ReadInt(0x90);
-
-            for (ushort i = 0; i < nTransLookup; i++)
-            {
-                short id = ReadShort(ofsTransLookup + 2 * i);
-                dico[i] = ReadUShort(ofsTrans + id * 0x14);
-            }
-
-            return dico;
-        }
-
         private void FixSkins()
         {
-            int n = ReadInt(0x70);
-            int ofs = ReadInt(0x74);
+            var transparencyLookupCount = ReadInt(0x90);
 
-            int n_transparency_lookup = ReadInt(0x90);
+            var textureUnitLookup = new List<short>();
+            var blendOverride = new List<ushort>();
 
-            string f = Path.Replace(".m2", "0");
-            List<short> texture_unit_lookup = new List<short>();
-            List<ushort> blend_override = new List<ushort>();
-            for (int i = 0; i < ReadInt(0x44); i++)
+            foreach (var skinFile in SkinFiles)
             {
-                string s = f + i + ".skin";
-                if (!File.Exists(s))
+                if (!File.Exists(skinFile))
                     continue;
 
-                var sf = new SkinConverter(s);
-                sf.Fix(ref texture_unit_lookup, ref blend_override, n_transparency_lookup);
+                var sf = new SkinConverter(skinFile);
+                sf.Fix(ref textureUnitLookup, ref blendOverride, transparencyLookupCount);
                 skins.Add(sf);
             }
 
-            if (blend_override.Count > 0)
+            if (blendOverride.Count > 0)
             {
-                uint globalflags = ReadUInt(0x10);
-                globalflags |= 0x8;
-                WriteUInt(0x10, globalflags);
+                var globalFlags = ReadUInt(0x10);
+                globalFlags |= 0x8;
+                WriteUInt(0x10, globalFlags);
 
-                int blend_override_pos = Data.Length;
-                int n_blend_override = blend_override.Count;
-                AddEmptyBytes(blend_override_pos, 2 * n_blend_override);
+                var blendOverridePosition = Data.Length;
+                var blendOverrideCount = blendOverride.Count;
+                AddEmptyBytes(blendOverridePosition, 2 * blendOverrideCount);
 
-                for (int i = 0; i < n_blend_override; ++i)
-                {
-                    WriteUShort(blend_override_pos + 0x2 * i, blend_override[i]);
-                }
+                for (var i = 0; i < blendOverrideCount; ++i)
+                    WriteUShort(blendOverridePosition + 0x2 * i, blendOverride[i]);
 
-                WriteInt(0x130, blend_override.Count);
-                WriteInt(0x134, blend_override_pos);
+                WriteInt(0x130, blendOverride.Count);
+                WriteInt(0x134, blendOverridePosition);
             }
 
-            int start = Data.Length;
-            WriteInt(0x88, texture_unit_lookup.Count);
+            var start = Data.Length;
+            WriteInt(0x88, textureUnitLookup.Count);
             WriteInt(0x8C, start);
 
-            AddEmptyBytes(start, texture_unit_lookup.Count * sizeof(ushort));
-            for (int i = 0; i < texture_unit_lookup.Count; ++i)
+            AddEmptyBytes(start, textureUnitLookup.Count * sizeof(ushort));
+            for (var i = 0; i < textureUnitLookup.Count; ++i)
             {
-                WriteShort(start + i * 2, texture_unit_lookup[i]);
+                WriteShort(start + i * 2, textureUnitLookup[i]);
             }
 
             // correct the renderflags given
@@ -684,39 +677,6 @@ namespace MultiConverter.Lib.Converters
                     return true;
 
             return false;
-        }
-
-        private HashSet<ushort> StaticAnim()
-        {
-            HashSet<ushort> anims = new HashSet<ushort>();
-            uint nUVAnim = ReadUInt(0x98);
-            uint ofs = ReadUInt(0x9C);
-
-            for (ushort t = 0; t < nUVAnim; t++)
-                if (ReadShort((int)(ofs + t * 0x2)) == -1)
-                    anims.Add(t);
-
-            return anims;
-        }
-
-        private HashSet<ushort> GetOpaqueRenderFlags()
-        {
-            HashSet<ushort> rf = new HashSet<ushort>();
-
-            uint n = ReadUInt(0x70);
-            uint ofs = ReadUInt(0x74);
-
-            for (ushort i = 0; i < n; i++)
-            {
-                ushort flag = ReadUShort((int)(ofs + i * 0x4));
-                ushort blend = ReadUShort((int)(ofs + i * 0x4 + 0x2));
-                if (flag == 0 || blend == 0)
-                {
-                    rf.Add(i);
-                }
-            }
-
-            return rf;
         }
 
         #region Shift Offset
