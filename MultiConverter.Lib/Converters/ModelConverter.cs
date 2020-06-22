@@ -23,8 +23,8 @@ namespace MultiConverter.Lib.Converters
         private HashSet<uint> shiftedOfs                = new HashSet<uint>();
         private Dictionary<int, byte[]> multitextInfo   = new Dictionary<int, byte[]>();
         private List<SkinConverter> skins               = new List<SkinConverter>();
-        private Dictionary<string, int> Textures        = new Dictionary<string, int>();
-        private Dictionary<string, uint> Chunks         = new Dictionary<string, uint>();
+
+        private Dictionary<Texture, int> Textures       = new Dictionary<Texture, int>();
 
         public M2Converter(string m2, bool fix_helm) : base(m2)
         {
@@ -44,9 +44,6 @@ namespace MultiConverter.Lib.Converters
                         var chunk   = new string(reader.ReadChars(4));
                         var size    = reader.ReadUInt32();
 
-                        if (chunk != "MD21")
-                            Chunks.Add(chunk, size);
-
                         switch (chunk)
                         {
                             case "MD21":
@@ -64,8 +61,8 @@ namespace MultiConverter.Lib.Converters
 
                                 // Skip to M2Array<Texture>.
                                 reader.ReadBytes(0x50);
-                                textureCount                   = reader.ReadInt32();
-                                textureOffset                 = reader.ReadInt32();
+                                textureCount                = reader.ReadInt32();
+                                textureOffset               = reader.ReadInt32();
 
                                 reader.BaseStream.Position = offset + size;
                                 break;
@@ -79,8 +76,8 @@ namespace MultiConverter.Lib.Converters
                         }
                     }
 
-                    dataSize        = Data.Length - (int)CalculateChunksSize() - 8;
-                    texturesSize    = CalculateTexturesSize();
+                    stream.Close();
+                    reader.Close();
                 }
 
                 particleCount   = ReadInt(0x128);
@@ -111,12 +108,21 @@ namespace MultiConverter.Lib.Converters
 
         private void ReadTXID(BinaryReader reader, uint size)
         {
-            for (int i = 0; i < size / 4; i++)
+            for (var i = 0u; i < size / 4u; i++)
             {
                 var textureId = reader.ReadUInt32();
 
-                var filename = Listfile.LookupFilename(textureId, ".m2", modelName).Replace('/', '\\');
-                Textures.Add(filename + "\0\0", filename.Length);
+                var filename = Listfile.LookupFilename(textureId, ".m2").Replace('/', '\\');
+                var texture = new Texture
+                {
+                    Filename = filename + "\0\0",
+                    FilenameLength = filename.Length
+                };
+
+                if (Textures.ContainsKey(texture))
+                    Textures[texture]++;
+                else
+                    Textures.Add(texture, 1);
             }
         }
 
@@ -128,8 +134,8 @@ namespace MultiConverter.Lib.Converters
 
             RemoveLegionChunks();
 
-            if (Textures.Count > 0)
-                FixTXID();
+            dataSize        = Data.Length;
+            texturesSize    = CalculateTexturesSize();
 
             FixCamera();
             FixAnimations();
@@ -213,37 +219,43 @@ namespace MultiConverter.Lib.Converters
             if (fixHelmOffset)
                 FixHelmOffset();
 
+            if (Textures.Count >= 1)
+                FixTXID();
+
             return true;
         }
 
         private void FixTXID()
         {
-            int textureBlockSize = 16;
+            var textureBlockSize = 4 * sizeof(uint);
+            var textureKeys = Textures.Keys.ToList();
 
             // Write `0` block at the end of the file.
-            AddEmptyBytes(dataSize, (int)texturesSize + textureBlockSize);
+            AddEmptyBytes(Data.Length, (int)texturesSize + textureBlockSize);
 
-            for (var i = 0; i < textureCount; ++i)
+            for (var i = 0; i < Textures.Count; ++i)
             {
-                // TEX_COMPONENT_HARDCODED
-                var isHarcoded = ReadUInt(textureOffset) == 0;
-                if (isHarcoded)
+                var texture = textureKeys[i];
+
+                for (var j = 0; j < Textures[texture]; ++j)
                 {
-                    var texture = Textures.First();
+                    // TEX_COMPONENT_HARDCODED
+                    var isHarcoded = ReadUInt(textureOffset) == 0;
+                    if (isHarcoded)
+                    {
+                        // Write Filename Length and Offset of Filename;
+                        WriteInt(textureOffset + 8, texture.FilenameLength);
+                        WriteInt(textureOffset + 12, dataSize);
 
-                    // Write Filename Length and Offset of Filename;
-                    WriteUInt(textureOffset + 8, (uint)texture.Value);
-                    WriteUInt(textureOffset + 12, (uint)dataSize);
+                        for (var x = 0; x < texture.Filename.Length; ++x)
+                            WriteChar(dataSize + x, texture.Filename[x]);
 
-                    for (var j = 0; j < texture.Value; ++j)
-                        WriteChar(dataSize + j, texture.Key[j]);
+                        dataSize += texture.Filename.Length;
+                    }
 
-                    dataSize += texture.Value + 2;
-                    Textures.Remove(texture.Key);
+                    // Block reading finished, add 4 * sizeof(uint)
+                    textureOffset += textureBlockSize;
                 }
-
-                // Block reading finished, add 16 (4 * sizeof(uint))
-                textureOffset += textureBlockSize;
             }
         }
 
@@ -534,7 +546,7 @@ namespace MultiConverter.Lib.Converters
                 if (!File.Exists(s))
                     continue;
 
-                SkinConverter sf = new SkinConverter(s);
+                var sf = new SkinConverter(s);
                 sf.Fix(ref texture_unit_lookup, ref blend_override, n_transparency_lookup);
                 skins.Add(sf);
             }
@@ -954,22 +966,13 @@ namespace MultiConverter.Lib.Converters
         #endregion
 
         #region Calculate Shit
-        private uint CalculateChunksSize()
-        {
-            uint result = 0;
-
-            foreach (var chunk in Chunks)
-                result += chunk.Value + 8; //< Calculate Chunk- and Size Identifiers
-
-            return result;
-        }
-
         private uint CalculateTexturesSize()
         {
-            uint result = 0;
+            var result = 0u;
 
-            foreach (var texture in Textures.Values)
-                result += (uint)texture + 1;
+            foreach (var texture in Textures)
+                for (var i = 0; i < texture.Value; ++i)
+                    result += (uint)texture.Key.FilenameLength + 1;
 
             return result;
         }
@@ -983,5 +986,11 @@ namespace MultiConverter.Lib.Converters
             foreach (var skin in skins)
                 skin.Save();
         }
+    }
+
+    public struct Texture
+    {
+        public string Filename;
+        public int FilenameLength;
     }
 }
