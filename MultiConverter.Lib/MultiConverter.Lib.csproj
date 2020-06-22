@@ -4,4 +4,10 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Converters\ADT\Chunks\Texture\" />
+    <Folder Include="Converters\ADT\Chunks\Object\" />
+    <Folder Include="Converters\ADT\Chunks\Root\" />
+  </ItemGroup>
+
 </Project>

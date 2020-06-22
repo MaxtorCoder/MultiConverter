@@ -38,7 +38,7 @@
             this.adt_group = new System.Windows.Forms.GroupBox();
             this.wmo_group = new System.Windows.Forms.GroupBox();
             this.m2_group = new System.Windows.Forms.GroupBox();
-            this.helm_fix_cb = new System.Windows.Forms.CheckBox();
+            this.helmFix = new System.Windows.Forms.CheckBox();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -155,7 +155,7 @@
             // 
             // m2_group
             // 
-            this.m2_group.Controls.Add(this.helm_fix_cb);
+            this.m2_group.Controls.Add(this.helmFix);
             this.m2_group.Location = new System.Drawing.Point(371, 193);
             this.m2_group.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.m2_group.Name = "m2_group";
@@ -167,16 +167,16 @@
             // 
             // helm_fix_cb
             // 
-            this.helm_fix_cb.AutoSize = true;
-            this.helm_fix_cb.Checked = true;
-            this.helm_fix_cb.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.helm_fix_cb.Location = new System.Drawing.Point(9, 16);
-            this.helm_fix_cb.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.helm_fix_cb.Name = "helm_fix_cb";
-            this.helm_fix_cb.Size = new System.Drawing.Size(108, 19);
-            this.helm_fix_cb.TabIndex = 0;
-            this.helm_fix_cb.Text = "Helm Offset Fix";
-            this.helm_fix_cb.UseVisualStyleBackColor = true;
+            this.helmFix.AutoSize = true;
+            this.helmFix.Checked = true;
+            this.helmFix.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.helmFix.Location = new System.Drawing.Point(9, 16);
+            this.helmFix.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.helmFix.Name = "helm_fix_cb";
+            this.helmFix.Size = new System.Drawing.Size(108, 19);
+            this.helmFix.TabIndex = 0;
+            this.helmFix.Text = "Helm Offset Fix";
+            this.helmFix.UseVisualStyleBackColor = true;
             // 
             // menuStrip1
             // 
@@ -249,7 +249,7 @@
         private System.Windows.Forms.GroupBox adt_group;
         private System.Windows.Forms.GroupBox wmo_group;
         private System.Windows.Forms.GroupBox m2_group;
-        private System.Windows.Forms.CheckBox helm_fix_cb;
+        private System.Windows.Forms.CheckBox helmFix;
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;

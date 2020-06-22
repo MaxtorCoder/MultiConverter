@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using MultiConverter.Lib;
 using MultiConverter.Lib.Converters;
+using MultiConverter.Lib.Converters.ADT;
 using MultiConverter.Lib.Converters.Base;
 using MultiConverter.Lib.Converters.WMO;
 using System;
@@ -76,14 +77,14 @@ namespace MultiConverter.GUI
 
                     if (filename.EndsWith("m2"))
                     {
-                        var m2converter = new M2Converter(filename, helm_fix_cb.Checked);
+                        var m2converter = new M2Converter(filename, helmFix.Checked);
                         if (m2converter.Fix())
                             m2converter.Save();
 
                         continue;
                     }
-                    // else if (filename.EndsWith("adt"))
-                    //     converter = new AdtConverter(filename, adt_water.Checked, adt_models.Checked);
+                    else if (filename.EndsWith("adt"))
+                        converter = new ADTFile(filename.Replace(".adt", "_obj0.adt"), filename.Replace(".adt", "_tex0.adt"));
                     // else if (filename.EndsWith("wdt"))
                     //     converter = new WDTConverter(filename);
                     else if (Regex.IsMatch(filename, @".*_[0-9]{3}(_(lod[0-9]))?\.(wmo)"))

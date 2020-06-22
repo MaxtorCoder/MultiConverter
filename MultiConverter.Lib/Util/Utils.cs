@@ -8,17 +8,11 @@ namespace MultiConverter.Lib
     {
         public static bool IsCorrectFile(string s)
         {
-            return s.EndsWith("m2", StringComparison.OrdinalIgnoreCase)
-                || s.EndsWith("anim", StringComparison.OrdinalIgnoreCase)
-                || s.EndsWith("wmo", StringComparison.OrdinalIgnoreCase)
-                || (s.EndsWith("wdt", StringComparison.OrdinalIgnoreCase)
-                  // todo: match with a regex maybe ?
-                  && !(s.EndsWith("_lgt.wdt", StringComparison.OrdinalIgnoreCase))
-                  && !(s.EndsWith("_occ.wdt", StringComparison.OrdinalIgnoreCase))
-                  && !(s.EndsWith("_fog.wdt", StringComparison.OrdinalIgnoreCase))
-                   )
-                || (Regex.IsMatch(s.ToLower(), @".*((_[0-9]{1,2}){2})(\.adt)"))
-                ;
+            return s.EndsWith(".m2", StringComparison.OrdinalIgnoreCase)
+                || s.EndsWith(".anim", StringComparison.OrdinalIgnoreCase)
+                || s.EndsWith(".wmo", StringComparison.OrdinalIgnoreCase)
+                || s.EndsWith(".adt", StringComparison.OrdinalIgnoreCase)
+                || s.EndsWith(".wdt", StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool IsChunk(ref byte[] buff, int pos, int magic)
