@@ -70,7 +70,9 @@ namespace MultiConverter.Updater
             var update = e.Argument as Update;
 
             updateWorker.ReportProgress(0, "Downloading update...");
-            update.WebClient.DownloadFile($"{update.DownloadUrl}_{update.VersionString}.zip", "update.zip");
+
+            // https://github.com/MaxtorCoder/MultiConverter/releases/download/3.6.1/MultiConverter3.6.1.rar
+            update.WebClient.DownloadFile($"{update.DownloadUrl}/{update.VersionString}/MultiConverter{update.VersionString}", "update.zip");
 
             updateWorker.ReportProgress(45, "Downloaded update.. Extracting update..");
 

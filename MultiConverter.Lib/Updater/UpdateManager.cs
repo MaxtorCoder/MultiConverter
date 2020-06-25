@@ -9,8 +9,8 @@ namespace MultiConverter.Lib.Updater
 {
     public static class UpdateManager
     {
-        public const string UpdateUrl = "<TODO: REPLACE THIS>";
-        public const string BetaUpdateUrl = "<TODO: REPLACE THIS>";
+        public const string UpdateUrl = "https://github.com/MaxtorCoder/MultiConverter/blob/master/update.json";
+        public const string BetaUpdateUrl = "https://github.com/MaxtorCoder/MultiConverter/blob/master/update_beta.json";
 
         public static (bool, string) HasUpdates(string versionString, bool hasBeta = false)
         {
