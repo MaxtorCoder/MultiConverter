@@ -1,5 +1,5 @@
-﻿using Microsoft.Win32;
-using MultiConverter.Lib;
+﻿using MultiConverter.Lib;
+using MultiConverter.Lib.Updater;
 using MultiConverter.Lib.Converters;
 using MultiConverter.Lib.Converters.ADT;
 using MultiConverter.Lib.Converters.Base;
@@ -9,10 +9,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
+using System.Reflection;
 
 namespace MultiConverter.GUI
 {
@@ -30,6 +30,28 @@ namespace MultiConverter.GUI
 
             InitializeComponent();
             lb.HorizontalScrollbar = true;
+
+            new Thread(() =>
+            {
+                Thread.Sleep(3000);
+
+                var hasUpdate = UpdateManager.HasUpdates(AssemblyVersion);
+                if (hasUpdate.Item1)
+                {
+                    var messageBox = MessageBox.Show($"An update is available! From: {AssemblyVersion} To: {hasUpdate.Item2}.\nPress OK to update.", "Update!", MessageBoxButtons.OK);
+                    if (messageBox == DialogResult.OK)
+                    {
+                        // Start the updater..
+                        UpdateManager.StartUpdater();
+
+                        // Close the current window.
+                        Invoke((MethodInvoker)delegate 
+                        { 
+                            Close(); 
+                        });
+                    }
+                }
+            }).Start();
         }
 
         private void Clear() => lb.Items.Clear();
@@ -199,6 +221,14 @@ namespace MultiConverter.GUI
         {
             var aboutBox = new About();
             aboutBox.Show();
+        }
+
+        public string AssemblyVersion
+        {
+            get
+            {
+                return Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            }
         }
     }
 }

@@ -165,14 +165,14 @@
             this.m2_group.TabStop = false;
             this.m2_group.Text = "M2";
             // 
-            // helm_fix_cb
+            // helmFix
             // 
             this.helmFix.AutoSize = true;
             this.helmFix.Checked = true;
             this.helmFix.CheckState = System.Windows.Forms.CheckState.Checked;
             this.helmFix.Location = new System.Drawing.Point(9, 16);
             this.helmFix.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.helmFix.Name = "helm_fix_cb";
+            this.helmFix.Name = "helmFix";
             this.helmFix.Size = new System.Drawing.Size(108, 19);
             this.helmFix.TabIndex = 0;
             this.helmFix.Text = "Helm Offset Fix";

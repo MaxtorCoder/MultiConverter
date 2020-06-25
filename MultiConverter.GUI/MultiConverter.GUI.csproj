@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>3.6.1</Version>
+    <Version>3.6.1.0</Version>
     <PackageId>WoW - MultiConverter</PackageId>
     <Authors>MaxtorCoder &amp; Adspartan</Authors>
     <Company>The Fuckporting Company</Company>
@@ -19,5 +19,19 @@ Code is on https://github.com/MaxtorCoder/MultiConverter</Description>
   <ItemGroup>
     <ProjectReference Include="..\MultiConverter.Lib\MultiConverter.Lib.csproj" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <AssemblyVersion>3.6.2.0</AssemblyVersion>
+    <FileVersion>3.6.2.0</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OutputPath>..\bin\Release\</OutputPath>
+  </PropertyGroup>
 
 </Project>
