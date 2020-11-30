@@ -13,12 +13,12 @@ If the .skin files are in the same folder they will be converted too.
 * Visual Studio 2019 (.NET Core 3.1)
 
 ## File Support
-| Format   | Cata      | MOP       | WOD       | Legion    | BFA (Above 26629)|
-|:--------:|:---------:|:---------:|:---------:|:---------:|:----------------:|
-|    M2    | ✔️        | ✔️        | ✔️        | ✔️        | ✔️               |
-|    WMO   | ✔️        | ✔️        | ✔️        | ✔️        | ✔️               |
-|    ADT   | ✔️        | ✔️        | ✔️        | ✔️        | ❌               |
-|    WDT   | ✔️        | ✔️        | ✔️        | ✔️        | ❌               |
+| Format   | BFA (Above 26629)| Shadowlands |
+|:--------:|:----------------:|:-----------:|
+|    M2    | ✔️               |✔️          |
+|    WMO   | ✔️               |❌          |
+|    ADT   | ❌               |❌          |
+|    WDT   | ❌               |❌          |
 
 ## To-Do
 * Animation particles
